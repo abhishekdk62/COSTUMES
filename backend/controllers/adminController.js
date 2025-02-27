@@ -19,18 +19,22 @@ const searchUsers = async (req, res) => {
 
 const addCategorys = async (req, res) => {
   try {
-    const { name, description, thumbnail } = req.body;
+    const { categoryName, description, discount } = req.body;
+    if(!categoryName||!description||!discount)
+    {
+      return res.status(400).json({message:"Enter all the fields"})
+    }
 
-    const category = await Category.findOne({ name });
+    const category = await Category.findOne({ name:categoryName });
 
     if (category) {
       return res.status(400).json({ message: "Category already exists" });
     }
 
     const newCategory = new Category({
-      name,
+      name: categoryName,
       description,
-      thumbnail,
+      discount,
     });
     await newCategory.save(); // Ensure saving completes before responding
     res

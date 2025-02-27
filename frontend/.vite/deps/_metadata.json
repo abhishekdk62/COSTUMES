@@ -2,7 +2,78 @@
   "hash": "a5588586",
   "configHash": "2f756616",
   "lockfileHash": "69de2801",
-  "browserHash": "734c04eb",
-  "optimized": {},
-  "chunks": {}
+  "browserHash": "033619a1",
+  "optimized": {
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "5c823c05",
+      "needsInterop": true
+    },
+    "react-redux": {
+      "src": "../../node_modules/react-redux/dist/react-redux.mjs",
+      "file": "react-redux.js",
+      "fileHash": "4dee0d23",
+      "needsInterop": false
+    },
+    "react-toastify": {
+      "src": "../../node_modules/react-toastify/dist/index.mjs",
+      "file": "react-toastify.js",
+      "fileHash": "ad3cf629",
+      "needsInterop": false
+    },
+    "@reduxjs/toolkit": {
+      "src": "../../node_modules/@reduxjs/toolkit/dist/redux-toolkit.modern.mjs",
+      "file": "@reduxjs_toolkit.js",
+      "fileHash": "2de0491d",
+      "needsInterop": false
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.mjs",
+      "file": "react-router-dom.js",
+      "fileHash": "5cc1558e",
+      "needsInterop": false
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "b7b86d76",
+      "needsInterop": true
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "61c66233",
+      "needsInterop": false
+    },
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "bc92ba9d",
+      "needsInterop": false
+    },
+    "react-icons/fa": {
+      "src": "../../node_modules/react-icons/fa/index.mjs",
+      "file": "react-icons_fa.js",
+      "fileHash": "5cdb2dfb",
+      "needsInterop": false
+    },
+    "react-phone-input-2": {
+      "src": "../../node_modules/react-phone-input-2/lib/lib.js",
+      "file": "react-phone-input-2.js",
+      "fileHash": "471ba132",
+      "needsInterop": true
+    }
+  },
+  "chunks": {
+    "chunk-TKHB4QMX": {
+      "file": "chunk-TKHB4QMX.js"
+    },
+    "chunk-YLDSBLSF": {
+      "file": "chunk-YLDSBLSF.js"
+    },
+    "chunk-DC5AMYBS": {
+      "file": "chunk-DC5AMYBS.js"
+    }
+  }
 }

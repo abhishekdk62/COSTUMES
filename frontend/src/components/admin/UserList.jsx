@@ -82,42 +82,41 @@ const Customer = () => {
   };
 
   return (
-    <div>
-      {/* Header and Search Section */}
-      <h2 className="text-2xl font-bold mb-4">Customer</h2>
-      <div className="flex justify-between items-center mb-4">
-      <div className="flex gap-2 justify-around relative w-full">
-  <div className="relative w-full">
-    <input
-      className="w-full ml-4 p-2 pr-10 border rounded-md"
-      placeholder="Search users"
-      type="text"
-      value={searchInput}
-      onChange={(e) => setSearchInput(e.target.value)}
-    />
-    {searchInput && (
-      <button 
-        className="cursor-pointer absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-        onClick={() => {
-          fetchUsers("")
-          setSearchInput("")
-        }}
-      >
-        <X size={25} />
-      </button>
-    )}
-  </div>
-
-  <button
-    onClick={handleSearch}
-    className="bg-blue-600 cursor-pointer text-white mx-4 px-4 py-2 rounded-md flex items-center"
-  >
-    <i className="fas fa-search mr-2"></i> <Search size={18} /> Search
-  </button>
-</div>
-
+    <div className="container mx-auto p-6">
+    <div className="relative w-full flex items-center">
+      {/* Search Input */}
+      <div className="relative flex-grow">
+        <input
+          className="w-full p-2 pr-10 border rounded-md"
+          placeholder="Search users"
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+        {searchInput && (
+          <button 
+            className="cursor-pointer absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            onClick={() => {
+              fetchUsers("");
+              setSearchInput("");
+            }}
+          >
+            <X size={25} />
+          </button>
+        )}
       </div>
+  
+      {/* Search Button */}
+      <button
+        onClick={handleSearch}
+        className="bg-blue-600 cursor-pointer text-white ml-4 px-4 py-2 rounded-md flex items-center"
+      >
+        <Search size={18} className="mr-2" /> Search
+      </button>
+    </div>
+  
       <div className="flex justify-center">{error && <p className="text-red-500">{error}</p>}</div>
+      <h2 className="text-2xl font-bold mb-4">Customer</h2>
 
       {/* Table Section */}
       {loading ? (
