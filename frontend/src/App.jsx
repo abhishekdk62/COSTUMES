@@ -5,6 +5,7 @@ import Home from "./pages/user/Home";
 import SignUp from "./pages/user/Signup";
 import PrivateRoute from "./protected/PrivateRoute";
 import PublicRoute from "./protected/PublicRoute";
+import React from 'react'
 
 function App() {
   return (

@@ -17,7 +17,7 @@ const Sidebar = ({activeTab, setActiveTab }) => {
       <nav className="mt-10">
         <a
           onClick={() => setActiveTab("dashboard")}
-          className={`flex items-center p-2 ${activeTab=="dashboard"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="dashboard"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
          
         >
           <FaTachometerAlt className="w-6" />
@@ -25,7 +25,7 @@ const Sidebar = ({activeTab, setActiveTab }) => {
         </a>
         <a
           onClick={() => setActiveTab("order")}
-          className={`flex items-center p-2 ${activeTab=="order"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="order"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
           
         >
           <FaLock className="w-6" />
@@ -33,7 +33,7 @@ const Sidebar = ({activeTab, setActiveTab }) => {
         </a>
         <a
           onClick={() => setActiveTab("products")}
-          className={`flex items-center p-2 ${activeTab=="products"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="products"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
        
         >
           <FaBoxOpen className="w-6" />
@@ -41,7 +41,7 @@ const Sidebar = ({activeTab, setActiveTab }) => {
         </a>
         <a
           onClick={() => setActiveTab("sales")}
-          className={`flex items-center p-2 ${activeTab=="sales"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="sales"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
        
         >
           <FaChartLine className="w-6" />
@@ -49,7 +49,7 @@ const Sidebar = ({activeTab, setActiveTab }) => {
         </a>
         <a
           onClick={() => setActiveTab("customer")}
-          className={`flex items-center p-2 ${activeTab=="customer"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="customer"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
         >
           {/*  */}
           <FaUsers className="w-6" />
@@ -57,7 +57,7 @@ const Sidebar = ({activeTab, setActiveTab }) => {
         </a>
         <a
           onClick={() => setActiveTab("coupon")}
-          className={`flex items-center p-2 ${activeTab=="coupon"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="coupon"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
           
         >
           <FaTags className="w-6" />
@@ -65,18 +65,19 @@ const Sidebar = ({activeTab, setActiveTab }) => {
         </a>
         <a
           onClick={() => setActiveTab("category")}
-          className={`flex items-center p-2 ${activeTab=="category"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="category"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
         >
           <FaThLarge className="w-6" />
           <span className="ml-3">Category</span>
         </a>
         <a
           onClick={() => setActiveTab("refund")}
-          className={`flex items-center p-2 ${activeTab=="refund"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
+          className={`cursor-pointer flex items-center p-2 ${activeTab=="refund"? "text-white bg-purple-600 rounded-md"  :"text-gray-700 hover:bg-gray-200"}`} 
         >
           <FaUndo className="w-6" />
-          <span className="ml-3">Refund/Return</span>
+          <span className="ml-3">Refund</span>
         </a>
+        
       </nav>
     </div>
   );
