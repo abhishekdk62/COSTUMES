@@ -1,19 +1,52 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { X, Search } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 
-const CategoryCard = ({ name, image }) => {
+//!  Category card
+const CategoryCard = ({ id, name, image, fetchCategories, setEditCategory }) => {
+  const deleteCategory = async () => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this category?");
+    if (confirmDelete) {
+      try {
+        const response = await axios.put(
+          `http://localhost:5000/admin/softdelete/${id}`, 
+          { isDeleted: true }  // Updating the isDeleted field
+        );
+          fetchCategories(""); // Ensure correct fetching
+        alert(response.data.message);
+      } catch (error) {
+        alert(error?.response?.data?.message || "Something went wrong");
+      }
+    }
+  };
+
+  const handleEdit = () => {
+    localStorage.setItem("categoryId", id);
+    setEditCategory(true);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center">
-      <img
-        src={image}
-        alt={`${name} category`}
-        className="w-24 h-24 mb-4 rounded-full"
-      />
+    <div className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center relative">
+      <div
+        onClick={deleteCategory}
+        className="cursor-pointer absolute top-2 right-2 text-gray-500 hover:text-red-500"
+      >
+        <Trash2 size={20} />
+      </div>
+      <div
+        onClick={handleEdit}
+        className="cursor-pointer absolute top-2 right-8 text-gray-500 hover:text-blue-500"
+      >
+        <Edit size={20} />
+      </div>
+      <img src={image} alt={`${name} category`} className="w-24 h-24 mb-4 rounded-full" />
       <h3 className="text-lg font-bold">{name}</h3>
     </div>
   );
 };
+
+//!  Shimmer card
 
 const CategoryCardShimmer = () => {
   return (
@@ -24,7 +57,9 @@ const CategoryCardShimmer = () => {
   );
 };
 
-const CategoryList = ({ setShowAddCategory }) => {
+//!  Category List
+
+const CategoryList = ({ setShowAddCategory, setEditCategory }) => {
   const [searchInput, setSearchInput] = useState("");
   const [categorieList, setCategoryList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,7 +70,6 @@ const CategoryList = ({ setShowAddCategory }) => {
   }, []);
 
   const fetchCategories = async (query) => {
-    if (!query.trim() && categorieList.length > 0) return; // Avoid redundant calls
     try {
       setLoading(true);
       setError(null);
@@ -114,8 +148,11 @@ const CategoryList = ({ setShowAddCategory }) => {
               : categorieList.map((category) => (
                   <CategoryCard
                     key={category._id}
+                    id={category._id}
                     name={category.name}
                     image={category.image}
+                    fetchCategories={fetchCategories}
+                    setEditCategory={setEditCategory}
                   />
                 ))}
           </div>
@@ -124,6 +161,9 @@ const CategoryList = ({ setShowAddCategory }) => {
     </>
   );
 };
+
+//!  Add Category
+
 const AddCategory = ({ setShowAddCategory }) => {
   const [categoryName, setCategoryName] = useState("");
   const [description, setDescription] = useState("");
@@ -142,6 +182,8 @@ const AddCategory = ({ setShowAddCategory }) => {
       );
 
       alert("Category added successfully!");
+      setCategoryName("");
+      setDescription("");
     } catch (error) {
       alert(error.response.data.message);
     }
@@ -151,7 +193,6 @@ const AddCategory = ({ setShowAddCategory }) => {
     <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
       <div className="flex justify-between">
         <h1 className="text-2xl font-bold mb-6">Add new Category</h1>
-       
       </div>
       <form onSubmit={handleSubmit}>
         {/* Category Name */}
@@ -287,8 +328,7 @@ const AddCategory = ({ setShowAddCategory }) => {
           <button
             className="px-4 py-2 cursor-pointer border border-gray-300 rounded-md text-gray-700"
             type="button"
-          onClick={() => setShowAddCategory(false)}
-
+            onClick={() => setShowAddCategory(false)}
           >
             Cancel
           </button>
@@ -303,13 +343,239 @@ const AddCategory = ({ setShowAddCategory }) => {
     </div>
   );
 };
-const Category = () => {
-  const [showAddCategory, setShowAddCategory] = useState(false);
 
-  return showAddCategory ? (
+//!  Edit category
+
+const EditCategory = ({ setEditCategory }) => {
+
+  useEffect(() => {
+    const getCategory = async () => {
+      const id = localStorage.getItem("categoryId"); // Get inside useEffect
+      setCategoryId(id)
+      if (!id) return; // Prevent request if id is missing
+
+      try {
+        const response = await axios.post(
+          `http://localhost:5000/admin/getcategory/${id}`
+        );
+        const category = response.data.data;
+        console.log(category);
+        setCategoryName(category.name);
+        setDescription(category.description);
+      } catch (error) {
+        console.log(error.message);
+      }
+    };
+
+    getCategory();
+  }, []); // Empty dependency array ensures it runs only on mount
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/admin/editcategories",
+        {
+         id:categoryId,
+          name: categoryName,
+          description: description,
+        }
+      );
+      alert(response.data.message);
+    } catch (error) {
+      console.error(error.response?.data?.message || error.message); // Improved error handling
+    }
+  };
+
+
+  const [categoryName, setCategoryName] = useState("");
+  const [description, setDescription] = useState("");
+  const [visibilityStatus, setVisibilityStatus] = useState("Active");
+  const [discount, setDiscount] = useState("10");
+  const[categoryId,setCategoryId]=useState()
+
+  return (
+    <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
+      <div className="flex justify-between">
+        <h1 className="text-2xl font-bold mb-6">Edit Category</h1>
+      </div>
+      <form onSubmit={handleSubmit}>
+        {/* Category Name */}
+        <div className="flex justify-around">
+          <div>
+            <div className="mb-4">
+              <label
+                className="block text-gray-700 font-semibold mb-2"
+                htmlFor="category-name"
+              >
+                Category Name
+              </label>
+              <input
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                id="category-name"
+                type="text"
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+              />
+            </div>
+
+            {/* Include Products */}
+            <div className="mb-4">
+              <label
+                className="block text-gray-700 font-semibold mb-2"
+                htmlFor="include-products"
+              >
+                Include products
+              </label>
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md flex flex-wrap gap-2">
+                <span className="bg-gray-200 px-2 py-1 rounded-full">
+                  Kids products <i className="fas fa-times ml-1"></i>
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full">
+                  Kids Style <i className="fas fa-times ml-1"></i>
+                </span>
+                <span className="bg-gray-200 px-2 py-1 rounded-full">
+                  Styling <i className="fas fa-times ml-1"></i>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Thumbnail */}
+          <div className="mb-4">
+            <label
+              className="block text-gray-700 font-semibold mb-2"
+              htmlFor="thumbnail"
+            >
+              Thumbnail
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-md p-4 flex items-center justify-center">
+              <div className="text-center">
+                <img
+                  src="https://placehold.co/50x50"
+                  alt="Placeholder image for thumbnail"
+                  className="mx-auto mb-2"
+                />
+                <button className="bg-gray-200 px-4 py-2 rounded-md">
+                  Add Image
+                </button>
+                <p className="text-gray-500 mt-2">
+                  Drag and drop your image or add using the button
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Description */}
+        <div className="flex justify-center mb-4">
+          <div className="w-[90%]">
+            <label
+              className="block text-gray-700 font-semibold mb-2"
+              htmlFor="category-description"
+            >
+              Category Description
+            </label>
+            <textarea
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              id="category-description"
+              placeholder="Write your description here..."
+              rows="4"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            ></textarea>
+          </div>
+        </div>
+
+        {/* Visibility Status and Discounts/Offers */}
+        <div className="flex justify-center mb-4">
+          <div className="w-[90%] flex flex-wrap -mx-2">
+            <div className="w-full md:w-1/2 px-2 mb-4 md:mb-0">
+              <label
+                className="block text-gray-700 font-semibold mb-2"
+                htmlFor="visibility-status"
+              >
+                Visibility Status
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                id="visibility-status"
+                value={visibilityStatus}
+                onChange={(e) => setVisibilityStatus(e.target.value)}
+              >
+                <option>Active</option>
+                <option>Inactive</option>
+              </select>
+            </div>
+            <div className="w-full md:w-1/2 px-2">
+              <label
+                className="block text-gray-700 font-semibold mb-2"
+                htmlFor="discounts-offers"
+              >
+                Discounts/Offers
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                id="discounts-offers"
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+              >
+                <option>10</option>
+                <option>20</option>
+                <option>30</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-center space-x-4">
+          <button
+            className="px-4 py-2 cursor-pointer border border-gray-300 rounded-md text-gray-700"
+            type="button"
+            onClick={() => {
+              localStorage.removeItem("categoryId");
+              setEditCategory(false);
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            className="px-4 cursor-pointer py-2 bg-purple-600 text-white rounded-md"
+            type="submit"
+          >
+            Edit
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+//!  Category
+
+const Category = () => {
+  const [showAddCategory, setShowAddCategory] = useState(
+    localStorage.getItem("showAddCategory") === "true"
+  );
+  const [editCategory, setEditCategory] = useState(
+    localStorage.getItem("editCategory") === "true"
+  ); // Track the category being edited
+
+  useEffect(() => {
+    localStorage.setItem("showAddCategory", showAddCategory);
+    localStorage.setItem("editCategory", editCategory);
+  }, [showAddCategory, editCategory]);
+
+  return editCategory ? (
+    <EditCategory setEditCategory={setEditCategory} />
+  ) : showAddCategory ? (
     <AddCategory setShowAddCategory={setShowAddCategory} />
   ) : (
-    <CategoryList setShowAddCategory={setShowAddCategory} />
+    <CategoryList
+      setEditCategory={setEditCategory}
+      setShowAddCategory={setShowAddCategory}
+    />
   );
 };
 
