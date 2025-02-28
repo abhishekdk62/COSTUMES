@@ -1,9 +1,14 @@
 const express = require('express');
-const { searchUsers, addCategorys, searchCategories, editCategories } = require('../controllers/adminController');
+const { searchUsers, addCategorys, searchCategories, editCategories, softdelete, getCategory } = require('../controllers/adminController');
 const router=express.Router()
 
 router.get("/searchusers",searchUsers)
 router.post("/addcategorys",addCategorys)
 router.get("/searchcategories",searchCategories)
-router.get("/editcategories",editCategories)
+router.post("/editcategories",editCategories)
+router.put("/softdelete/:id",softdelete)
+router.post("/getcategory/:id",getCategory)
+
+
+
 module.exports=router
