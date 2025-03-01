@@ -382,6 +382,7 @@ const EditCategory = ({ setEditCategory }) => {
         }
       );
       alert(response.data.message);
+      
     } catch (error) {
       console.error(error.response?.data?.message || error.message); // Improved error handling
     }
