@@ -5,7 +5,7 @@ import { FaGoogle, FaTwitter, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { login } from "../../../slices/authSlice"; // Ensure this is imported correctly
 
-const LoginForm = () => {
+const LoginForm = ({setForgotPassword}) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -126,7 +126,7 @@ const LoginForm = () => {
 
           {/* Forgot Password */}
           <div className="flex justify-between items-center mb-6">
-            <a className="text-sm text-gray-500 hover:text-purple-600" href="#">
+            <a onClick={()=>setForgotPassword(true)} className="text-sm cursor-pointer text-gray-500 hover:text-purple-600">
               Forgot your password?
             </a>
           </div>

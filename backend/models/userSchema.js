@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema(
     balance: { type: Number, default: 0 }, 
     profileImage: { type: String, default: "" }, 
     dateOfBirth: { type: Date }, 
+    otp: { type: String },  // Added field for storing OTP
+    otpExpiry: { type: Number }, // Added field for OTP expiry time
   },
   { timestamps: true } 
 );
