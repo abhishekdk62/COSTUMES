@@ -4,6 +4,7 @@ import SignUpForm from "../../components/user/SignUpForm";
 
 const SignUp = () => {
   return (
+    
     <div className="overflow-hidden">
       <Header />
       <SignUpForm />

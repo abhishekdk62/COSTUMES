@@ -19,6 +19,7 @@ function App() {
             </PublicRoute>
           }
         />
+        
         <Route path="/signup" element={<SignUp />} />
         <Route
           path="/admin/users"
