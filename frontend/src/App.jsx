@@ -5,7 +5,9 @@ import Home from "./pages/user/Home";
 import SignUp from "./pages/user/Signup";
 import PrivateRoute from "./protected/PrivateRoute";
 import PublicRoute from "./protected/PublicRoute";
-import React from 'react'
+import React from "react";
+import ProductsView from "./pages/user/ProductsView";
+import ProductView from "./pages/user/ProductView";
 
 function App() {
   return (
@@ -19,8 +21,11 @@ function App() {
             </PublicRoute>
           }
         />
-        
+
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/products" element={<ProductsView />} />
+        <Route path="/product" element={<ProductView />} />
+
         <Route
           path="/admin/users"
           element={
@@ -29,6 +34,7 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route
           path="/user/home"
           element={

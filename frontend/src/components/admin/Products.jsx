@@ -12,10 +12,48 @@ const AddProduct = ({ setShowAddProduct }) => {
   const [discountPercentage, setDiscountPercentage] = useState("");
   const [stock, setStock] = useState("");
   const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState([]);
   const [owner, setOwner] = useState("");
   const [color, setColor] = useState("");
   const [quantity, setQuantity] = useState("");
   const [size, setSize] = useState("");
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/admin/searchcategories?q=");
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Function to handle file upload to Cloudinary for a specific image index
+  const handleImageUpload = async (index, event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "COSTUMES"); // Use your upload preset
+
+    try {
+      const res = await fetch("https://api.cloudinary.com/v1_1/dv8xenucq/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      // Update the productImages array for the specific index
+      const newProductImages = [...productImages];
+      newProductImages[index] = data.secure_url;
+      setProductImages(newProductImages);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,12 +69,14 @@ const AddProduct = ({ setShowAddProduct }) => {
           discount_price: discountPrice,
           discount_percentage: discountPercentage,
           stock,
+          category,
           color,
           quantity,
           size,
         }
       );
       alert(response.data.message);
+      // Reset the form fields
       setName("");
       setDescription("");
       setBrand("");
@@ -45,6 +85,7 @@ const AddProduct = ({ setShowAddProduct }) => {
       setDiscountPrice("");
       setDiscountPercentage("");
       setStock("");
+      setCategory("");
       setColor("");
       setOwner("");
       setQuantity("");
@@ -58,6 +99,7 @@ const AddProduct = ({ setShowAddProduct }) => {
     <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
       <form onSubmit={handleSubmit}>
+        {/* Product Name */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">
             Product Name
@@ -69,6 +111,7 @@ const AddProduct = ({ setShowAddProduct }) => {
             onChange={(e) => setName(e.target.value)}
           />
         </div>
+        {/* Product Description */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">
             Product Description
@@ -81,6 +124,7 @@ const AddProduct = ({ setShowAddProduct }) => {
             onChange={(e) => setDescription(e.target.value)}
           ></textarea>
         </div>
+        {/* Brand */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">Brand</label>
           <input
@@ -90,32 +134,57 @@ const AddProduct = ({ setShowAddProduct }) => {
             onChange={(e) => setBrand(e.target.value)}
           />
         </div>
+        {/* Add Photos */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">
             Add Photos
           </label>
           <div className="flex space-x-4">
-            {productImages.map((_, index) => (
+            {productImages.map((img, index) => (
               <div
                 key={index}
                 className="w-1/3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center p-4"
               >
                 <div className="text-center">
-                  <img
-                    alt="Placeholder"
-                    className="mx-auto mb-2"
-                    height="100"
-                    src="https://placehold.co/100x100"
-                    width="100"
-                  />
-                  <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">
-                    Add Image
-                  </button>
+                  {img ? (
+                    <img
+                      src={img}
+                      alt={`Uploaded ${index}`}
+                      className="mx-auto mb-2"
+                      height="100"
+                      width="100"
+                    />
+                  ) : (
+                    <>
+                      <img
+                        alt="Placeholder"
+                        className="mx-auto mb-2"
+                        height="100"
+                        src="https://placehold.co/100x100"
+                        width="100"
+                      />
+                      {/* Hidden file input for image upload */}
+                      <input
+                        id={`fileInput${index}`}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(e) => handleImageUpload(index, e)}
+                      />
+                      <label
+                        htmlFor={`fileInput${index}`}
+                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-pointer"
+                      >
+                        Add Image
+                      </label>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
+        {/* Pricing, Stock, and Category */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-gray-700 font-bold mb-2">
@@ -151,7 +220,9 @@ const AddProduct = ({ setShowAddProduct }) => {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-bold mb-2">Stock</label>
+            <label className="block text-gray-700 font-bold mb-2">
+              Stock
+            </label>
             <input
               className="w-full px-3 py-2 border rounded-lg"
               type="text"
@@ -159,16 +230,23 @@ const AddProduct = ({ setShowAddProduct }) => {
               onChange={(e) => setStock(e.target.value)}
             />
           </div>
+          {/* Category Dropdown */}
           <div>
             <label className="block text-gray-700 font-bold mb-2">
               Category
             </label>
-            <input
+            <select
               className="w-full px-3 py-2 border rounded-lg"
-              type="text"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-            />
+            >
+              <option value="">Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-gray-700 font-bold mb-2">Owner</label>
@@ -209,6 +287,7 @@ const AddProduct = ({ setShowAddProduct }) => {
             />
           </div>
         </div>
+        {/* Form Buttons */}
         <div className="flex justify-end space-x-4">
           <button
             onClick={() => setShowAddProduct(false)}
@@ -228,6 +307,9 @@ const AddProduct = ({ setShowAddProduct }) => {
     </div>
   );
 };
+
+
+
 
 //! Products list component
 
@@ -396,8 +478,27 @@ const ProductsList = ({ setShowAddProduct, setShowEditProduct }) => {
 
 //!edit products
 
+
+
 const EditProduct = ({ setShowEditProduct }) => {
-  const [productDetails, setProductDetails] = useState();
+  const [productDetails, setProductDetails] = useState(null);
+
+  // State variables
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [brand, setBrand] = useState("");
+  const [productImages, setProductImages] = useState(["", "", ""]);
+  const [basePrice, setBasePrice] = useState("");
+  const [discountPrice, setDiscountPrice] = useState("");
+  const [discountPercentage, setDiscountPercentage] = useState("");
+  const [stock, setStock] = useState("");
+  const [category, setCategory] = useState("");
+  const [owner, setOwner] = useState("");
+  const [color, setColor] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [size, setSize] = useState("");
+
+  // Fetch product details on mount
   useEffect(() => {
     const id = localStorage.getItem("productId");
     const fetchProduct = async () => {
@@ -427,23 +528,34 @@ const EditProduct = ({ setShowEditProduct }) => {
       setColor(productDetails.color || "");
       setQuantity(productDetails.quantity || "");
       setSize(productDetails.size || "");
+      setCategory(productDetails.category || "");
+      setProductImages(productDetails.productImages || ["", "", ""]);
     }
   }, [productDetails]);
 
-  // State variables
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [brand, setBrand] = useState("");
-  const [productImages, setProductImages] = useState(["", "", ""]);
-  const [basePrice, setBasePrice] = useState("");
-  const [discountPrice, setDiscountPrice] = useState("");
-  const [discountPercentage, setDiscountPercentage] = useState("");
-  const [stock, setStock] = useState("");
-  const [category, setCategory] = useState("");
-  const [owner, setOwner] = useState("");
-  const [color, setColor] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [size, setSize] = useState("");
+  // Handle image upload to Cloudinary for a specific image slot
+  const handleImageUpload = async (index, event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "COSTUMES"); // your upload preset
+
+    try {
+      const res = await fetch("https://api.cloudinary.com/v1_1/dv8xenucq/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      // Update the specific image slot with the secure URL from Cloudinary
+      const newProductImages = [...productImages];
+      newProductImages[index] = data.secure_url;
+      setProductImages(newProductImages);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -459,6 +571,8 @@ const EditProduct = ({ setShowEditProduct }) => {
           discount_price: discountPrice,
           discount_percentage: discountPercentage,
           stock,
+          category,
+          owner,
           color,
           quantity,
           size,
@@ -474,10 +588,9 @@ const EditProduct = ({ setShowEditProduct }) => {
     <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6">Edit Product</h1>
       <form onSubmit={handleSubmit}>
+        {/* Product Name */}
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">
-            Product Name
-          </label>
+          <label className="block text-gray-700 font-bold mb-2">Product Name</label>
           <input
             className="w-full px-3 py-2 border rounded-lg"
             type="text"
@@ -485,10 +598,9 @@ const EditProduct = ({ setShowEditProduct }) => {
             onChange={(e) => setName(e.target.value)}
           />
         </div>
+        {/* Product Description */}
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">
-            Product Description
-          </label>
+          <label className="block text-gray-700 font-bold mb-2">Product Description</label>
           <textarea
             className="w-full px-3 py-2 border rounded-lg"
             placeholder="Write your description here..."
@@ -497,6 +609,7 @@ const EditProduct = ({ setShowEditProduct }) => {
             onChange={(e) => setDescription(e.target.value)}
           ></textarea>
         </div>
+        {/* Brand */}
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">Brand</label>
           <input
@@ -506,37 +619,56 @@ const EditProduct = ({ setShowEditProduct }) => {
             onChange={(e) => setBrand(e.target.value)}
           />
         </div>
+        {/* Add Photos */}
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">
-            Add Photos
-          </label>
+          <label className="block text-gray-700 font-bold mb-2">Add Photos</label>
           <div className="flex space-x-4">
-            {productImages.map((_, index) => (
+            {productImages.map((img, index) => (
               <div
                 key={index}
                 className="w-1/3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center p-4"
               >
                 <div className="text-center">
-                  <img
-                    alt="Placeholder"
-                    className="mx-auto mb-2"
-                    height="100"
-                    src="https://placehold.co/100x100"
-                    width="100"
+                  {img ? (
+                    <img
+                      src={img}
+                      alt={`Uploaded ${index}`}
+                      className="mx-auto mb-2"
+                      height="100"
+                      width="100"
+                    />
+                  ) : (
+                    <img
+                      alt="Placeholder"
+                      src="https://placehold.co/100x100"
+                      className="mx-auto mb-2"
+                      height="100"
+                      width="100"
+                    />
+                  )}
+                  {/* Hidden file input for image upload */}
+                  <input
+                    id={`fileInput${index}`}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => handleImageUpload(index, e)}
                   />
-                  <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">
-                    Add Image
-                  </button>
+                  <label
+                    htmlFor={`fileInput${index}`}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-pointer"
+                  >
+                    {img ? "Change Image" : "Add Image"}
+                  </label>
                 </div>
               </div>
             ))}
           </div>
         </div>
+        {/* Pricing, Stock, and Other Details */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Base Price
-            </label>
+            <label className="block text-gray-700 font-bold mb-2">Base Price</label>
             <input
               className="w-full px-3 py-2 border rounded-lg"
               type="text"
@@ -545,9 +677,7 @@ const EditProduct = ({ setShowEditProduct }) => {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Discount Price
-            </label>
+            <label className="block text-gray-700 font-bold mb-2">Discount Price</label>
             <input
               className="w-full px-3 py-2 border rounded-lg"
               type="text"
@@ -556,9 +686,7 @@ const EditProduct = ({ setShowEditProduct }) => {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Discount Percentage
-            </label>
+            <label className="block text-gray-700 font-bold mb-2">Discount Percentage</label>
             <input
               className="w-full px-3 py-2 border rounded-lg"
               type="text"
@@ -576,9 +704,7 @@ const EditProduct = ({ setShowEditProduct }) => {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Category
-            </label>
+            <label className="block text-gray-700 font-bold mb-2">Category</label>
             <input
               className="w-full px-3 py-2 border rounded-lg"
               type="text"
@@ -605,9 +731,7 @@ const EditProduct = ({ setShowEditProduct }) => {
             />
           </div>
           <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Quantity
-            </label>
+            <label className="block text-gray-700 font-bold mb-2">Quantity</label>
             <input
               className="w-full px-3 py-2 border rounded-lg"
               type="text"
@@ -647,6 +771,7 @@ const EditProduct = ({ setShowEditProduct }) => {
     </div>
   );
 };
+
 
 //! Products component
 const Products = () => {

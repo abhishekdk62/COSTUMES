@@ -4,7 +4,7 @@ import { X, Search } from "lucide-react";
 import { Trash2, Edit } from "lucide-react";
 
 //!  Category card
-const CategoryCard = ({ id, name, image, fetchCategories, setEditCategory }) => {
+const CategoryCard = ({ id, name, thumbnail, fetchCategories, setEditCategory }) => {
   const deleteCategory = async () => {
     const confirmDelete = window.confirm("Are you sure you want to delete this category?");
     if (confirmDelete) {
@@ -40,7 +40,7 @@ const CategoryCard = ({ id, name, image, fetchCategories, setEditCategory }) => 
       >
         <Edit size={20} />
       </div>
-      <img src={image} alt={`${name} category`} className="w-24 h-24 mb-4 rounded-full" />
+      <img src={thumbnail} alt={`${name} category`} className="w-24 h-24 mb-4 rounded-full" />
       <h3 className="text-lg font-bold">{name}</h3>
     </div>
   );
@@ -150,7 +150,7 @@ const CategoryList = ({ setShowAddCategory, setEditCategory }) => {
                     key={category._id}
                     id={category._id}
                     name={category.name}
-                    image={category.image}
+                    thumbnail={category.thumbnail}
                     fetchCategories={fetchCategories}
                     setEditCategory={setEditCategory}
                   />
@@ -169,21 +169,42 @@ const AddCategory = ({ setShowAddCategory }) => {
   const [description, setDescription] = useState("");
   const [visibilityStatus, setVisibilityStatus] = useState("Active");
   const [discount, setDiscount] = useState("10");
+  const [thumbnail, setThumbnail] = useState("");
+
+  // Function to handle thumbnail upload to Cloudinary
+  const handleThumbnailUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "COSTUMES"); // your upload preset
+
+    try {
+      const res = await fetch("https://api.cloudinary.com/v1_1/dv8xenucq/image/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      setThumbnail(data.secure_url);
+    } catch (error) {
+      console.error("Error uploading thumbnail:", error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:5000/admin/addcategorys",
-        {
-          categoryName,
-          description,
-          discount,
-        }
-      );
-
+      const response = await axios.post("http://localhost:5000/admin/addcategorys", {
+        categoryName,
+        description,
+        discount,
+        thumbnail, // sending the thumbnail URL to the backend
+      });
       alert("Category added successfully!");
       setCategoryName("");
       setDescription("");
+      setThumbnail("");
     } catch (error) {
       alert(error.response.data.message);
     }
@@ -246,14 +267,34 @@ const AddCategory = ({ setShowAddCategory }) => {
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-md p-4 flex items-center justify-center">
               <div className="text-center">
-                <img
-                  src="https://placehold.co/50x50"
-                  alt="Placeholder image for thumbnail"
-                  className="mx-auto mb-2"
+                {thumbnail ? (
+                  <img
+                    src={thumbnail}
+                    alt="Thumbnail"
+                    className="mx-auto mb-2"
+                    style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                  />
+                ) : (
+                  <img
+                    src="https://placehold.co/50x50"
+                    alt="Placeholder image for thumbnail"
+                    className="mx-auto mb-2"
+                  />
+                )}
+                {/* Hidden file input */}
+                <input
+                  id="thumbnailInput"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleThumbnailUpload}
                 />
-                <button className="bg-gray-200 px-4 py-2 rounded-md">
+                <label
+                  htmlFor="thumbnailInput"
+                  className="bg-gray-200 px-4 py-2 rounded-md cursor-pointer"
+                >
                   Add Image
-                </button>
+                </label>
                 <p className="text-gray-500 mt-2">
                   Drag and drop your image or add using the button
                 </p>
@@ -344,14 +385,23 @@ const AddCategory = ({ setShowAddCategory }) => {
   );
 };
 
+
+
 //!  Edit category
 
+
 const EditCategory = ({ setEditCategory }) => {
+  const [categoryId, setCategoryId] = useState("");
+  const [categoryName, setCategoryName] = useState("");
+  const [description, setDescription] = useState("");
+  const [visibilityStatus, setVisibilityStatus] = useState("Active");
+  const [discount, setDiscount] = useState("10");
+  const [thumbnail, setThumbnail] = useState("");
 
   useEffect(() => {
     const getCategory = async () => {
       const id = localStorage.getItem("categoryId"); // Get inside useEffect
-      setCategoryId(id)
+      setCategoryId(id);
       if (!id) return; // Prevent request if id is missing
 
       try {
@@ -362,13 +412,37 @@ const EditCategory = ({ setEditCategory }) => {
         console.log(category);
         setCategoryName(category.name);
         setDescription(category.description);
+        setThumbnail(category.thumbnail || ""); // Set thumbnail if exists
       } catch (error) {
         console.log(error.message);
       }
     };
 
     getCategory();
-  }, []); // Empty dependency array ensures it runs only on mount
+  }, []);
+
+  // Handle thumbnail upload to Cloudinary
+  const handleThumbnailUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "COSTUMES"); // Use your upload preset
+
+    try {
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/dv8xenucq/image/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      const data = await res.json();
+      setThumbnail(data.secure_url);
+    } catch (error) {
+      console.error("Error uploading thumbnail:", error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -376,24 +450,21 @@ const EditCategory = ({ setEditCategory }) => {
       const response = await axios.post(
         "http://localhost:5000/admin/editcategories",
         {
-         id:categoryId,
+          id: categoryId,
           name: categoryName,
           description: description,
+          discount: discount,
+          visibilityStatus: visibilityStatus,
+          thumbnail: thumbnail, // Send the thumbnail URL to the backend
         }
       );
       alert(response.data.message);
-      
     } catch (error) {
-      console.error(error.response?.data?.message || error.message); // Improved error handling
+      console.error(
+        error.response?.data?.message || error.message
+      );
     }
   };
-
-
-  const [categoryName, setCategoryName] = useState("");
-  const [description, setDescription] = useState("");
-  const [visibilityStatus, setVisibilityStatus] = useState("Active");
-  const [discount, setDiscount] = useState("10");
-  const[categoryId,setCategoryId]=useState()
 
   return (
     <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
@@ -401,7 +472,7 @@ const EditCategory = ({ setEditCategory }) => {
         <h1 className="text-2xl font-bold mb-6">Edit Category</h1>
       </div>
       <form onSubmit={handleSubmit}>
-        {/* Category Name */}
+        {/* Category Name & Included Products */}
         <div className="flex justify-around">
           <div>
             <div className="mb-4">
@@ -419,8 +490,7 @@ const EditCategory = ({ setEditCategory }) => {
                 onChange={(e) => setCategoryName(e.target.value)}
               />
             </div>
-
-            {/* Include Products */}
+            {/* Include Products (Static for now) */}
             <div className="mb-4">
               <label
                 className="block text-gray-700 font-semibold mb-2"
@@ -442,7 +512,7 @@ const EditCategory = ({ setEditCategory }) => {
             </div>
           </div>
 
-          {/* Thumbnail */}
+          {/* Thumbnail Upload */}
           <div className="mb-4">
             <label
               className="block text-gray-700 font-semibold mb-2"
@@ -452,14 +522,38 @@ const EditCategory = ({ setEditCategory }) => {
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-md p-4 flex items-center justify-center">
               <div className="text-center">
-                <img
-                  src="https://placehold.co/50x50"
-                  alt="Placeholder image for thumbnail"
-                  className="mx-auto mb-2"
+                {thumbnail ? (
+                  <img
+                    src={thumbnail}
+                    alt="Thumbnail"
+                    className="mx-auto mb-2"
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <img
+                    src="https://placehold.co/50x50"
+                    alt="Placeholder image for thumbnail"
+                    className="mx-auto mb-2"
+                  />
+                )}
+                {/* Hidden file input */}
+                <input
+                  id="thumbnailInput"
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleThumbnailUpload}
                 />
-                <button className="bg-gray-200 px-4 py-2 rounded-md">
-                  Add Image
-                </button>
+                <label
+                  htmlFor="thumbnailInput"
+                  className="bg-gray-200 px-4 py-2 rounded-md cursor-pointer"
+                >
+                  {thumbnail ? "Change Image" : "Add Image"}
+                </label>
                 <p className="text-gray-500 mt-2">
                   Drag and drop your image or add using the button
                 </p>
@@ -552,6 +646,8 @@ const EditCategory = ({ setEditCategory }) => {
     </div>
   );
 };
+
+
 
 //!  Category
 

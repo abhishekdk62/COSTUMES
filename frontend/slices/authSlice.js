@@ -20,18 +20,21 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     login: (state, action) => {
-      const { user, token, role } = action.payload;
-
-      // Update Redux state
-      state.user = user;
-      state.token = token;
-      state.role = role;
-
-      // Persist in localStorage
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
+      const { token, user, role } = action.payload;
+      if (token !== undefined) {
+        state.token = token;
+        localStorage.setItem("token", token);
+      }
+      if (user !== undefined) {
+        state.user = user;
+        localStorage.setItem("user", JSON.stringify(user));
+      }
+      if (role !== undefined) {
+        state.role = role;
+        localStorage.setItem("role", role);
+      }
     },
+    
     logout: (state) => {
       // Clear Redux state
       state.user = null;

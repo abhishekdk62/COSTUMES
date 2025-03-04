@@ -24,7 +24,7 @@ const LoginForm = () => {
     e.preventDefault();
     setLoading(true);
     setError(""); // Clear previous errors
-  
+
     // Prepare the data for the API request
     const userData = {
       email,
@@ -32,7 +32,7 @@ const LoginForm = () => {
       phone: `+${phone}`, // Add the "+" prefix for the phone number
       password,
     };
-  
+
     try {
       // Make a POST request to the backend
       const response = await axios.post(
@@ -40,15 +40,15 @@ const LoginForm = () => {
         userData
       );
       console.log("Signup successful:", response.data);
-  
+
       // Assuming the backend returns `user`, `token`, and `role` in the response
       const { user, token, role } = response.data;
-  
+
       // Store in localStorage
       localStorage.setItem("user", JSON.stringify(user)); // Store user object as a string
       localStorage.setItem("token", token); // Store token
       localStorage.setItem("role", role); // Store role
-  
+
       // Dispatch the login action to update Redux state
       dispatch(
         login({
@@ -57,7 +57,7 @@ const LoginForm = () => {
           role, // Save role ('admin' or 'user')
         })
       );
-  
+
       // Redirect to the home page or dashboard after successful signup
       navigate(role === "admin" ? "/admin/dashboard" : "/user/home");
     } catch (err) {
@@ -76,41 +76,26 @@ const LoginForm = () => {
       {/* Image Section */}
       <div className="h-[90vh] md:w-1/2 relative">
         <img
-          src="https://storage.googleapis.com/a1aa/image/k_dyGhw9ews3CGPOuNvnM-5QivQD-9LPLXsWf7aKUko.jpg"
+          src="https://hips.hearstapps.com/hmg-prod/images/hbz090122newsopener-collage-1664051983.jpg?crop=1.00xw:1.00xh;0,0&resize=1200:*"
           alt="Three women wearing sunglasses and smiling"
           className="w-full h-full object-cover"
         />
-        <div className="text-center absolute top-5 left-1/2 transform -translate-x-1/2 font-bold text-black bg-opacity-50 px-4 py-2 rounded-md">
-          <p>Looks like you're new here!</p>
-          <h1 className="text-3xl">Sign Up</h1>
-        </div>
       </div>
 
       {/* Form Section */}
       <div className="md:w-1/2 p-8 flex flex-col justify-center overflow-y-auto">
-        {/* Social Login Buttons */}
-        <button className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
-          <FaGoogle className="text-red-500 mr-2" />
-          <span className="text-purple-600">Continue With Google</span>
-        </button>
-        <button className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
-          <FaTwitter className="text-blue-500 mr-2" />
-          <span className="text-purple-600">Continue With Twitter</span>
-        </button>
-
-        {/* Divider */}
-        <div className="flex items-center my-4">
-          <hr className="flex-grow border-gray-300" />
-          <span className="mx-2 text-gray-400">OR</span>
-          <hr className="flex-grow border-gray-300" />
+        {/* Welcome Text at the Top (Centered) */}
+        <div className="mb-6 flex justify-center">
+          <div className="text-center font-bold text-black px-4 mt-3 rounded-md">
+            <p>Welcome to Costumes!</p>
+            <h1 className="text-3xl">Create an account</h1>
+          </div>
         </div>
 
-        {/* Error Message */}
+     
         {error && <div className="mb-4 text-red-500 text-center">{error}</div>}
 
-        {/* Sign Up Form */}
         <form onSubmit={handleSubmit}>
-          {/* Name Field */}
           <div className="mb-4">
             <label className="block text-gray-700 mb-2" htmlFor="name">
               Name
@@ -125,7 +110,6 @@ const LoginForm = () => {
             />
           </div>
 
-          {/* Email Field */}
           <div className="mb-4">
             <label className="block text-gray-700 mb-2" htmlFor="email">
               Email Address
@@ -139,13 +123,12 @@ const LoginForm = () => {
             />
           </div>
 
-          {/* Phone Field */}
           <div className="mb-4">
             <label className="block text-gray-700 mb-2" htmlFor="phone">
               Phone
             </label>
             <PhoneInput
-              country={"in"} // Default country India (+91)
+              country={"in"} 
               value={phone}
               onChange={(value) => setPhone(value)}
               inputProps={{
@@ -163,7 +146,7 @@ const LoginForm = () => {
               inputStyle={{
                 width: "100%",
                 height: "100%",
-                paddingLeft: "48px", // Adjust padding to align text
+                paddingLeft: "48px", 
               }}
             />
           </div>
@@ -189,17 +172,15 @@ const LoginForm = () => {
             </span>
           </div>
 
-          {/* Sign Up Button */}
           <button
             type="submit"
             className="w-full bg-purple-600 text-white rounded-lg py-2 hover:bg-purple-700 transition-colors"
-            disabled={loading} // Disable button during loading
+            disabled={loading}
           >
             {loading ? "Signing Up..." : "Sign Up"}
           </button>
         </form>
 
-        {/* Sign In Link */}
         <p className="mt-6 text-center text-gray-500">
           Already have an account?{" "}
           <a
@@ -209,6 +190,23 @@ const LoginForm = () => {
             Sign in
           </a>
         </p>
+        <div className="flex items-center my-4">
+          <hr className="flex-grow border-gray-300" />
+          <span className="mx-2 text-gray-400">OR</span>
+          <hr className="flex-grow border-gray-300" />
+        </div>
+
+        <div className="mb-6">
+          <button className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
+            <FaGoogle className="text-red-500 mr-2" />
+            <span className="text-purple-600">Continue With Google</span>
+          </button>
+          <button className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
+            <FaTwitter className="text-blue-500 mr-2" />
+            <span className="text-purple-600">Continue With Twitter</span>
+          </button>
+        </div>
+
       </div>
     </div>
   );

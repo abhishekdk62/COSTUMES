@@ -17,33 +17,34 @@ const searchUsers = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 const addCategorys = async (req, res) => {
   try {
-    const { categoryName, description, discount } = req.body;
-    if (!categoryName || !description || !discount) {
-      return res.status(400).json({ message: "Enter all the fields" });
+    const { categoryName, description, discount, thumbnail } = req.body;
+
+    // Validate required fields
+    if (!categoryName || !description || !discount || !thumbnail) {
+      return res.status(400).json({ message: "Enter all the fields including thumbnail" });
     }
 
+    // Check if the category already exists
     const category = await Category.findOne({ name: categoryName });
-
     if (category) {
       return res.status(400).json({ message: "Category already exists" });
     }
 
+    // Create a new category with the thumbnail URL included
     const newCategory = new Category({
       name: categoryName,
       description,
       discount,
+      thumbnail,
     });
+
     await newCategory.save(); // Ensure saving completes before responding
-    res
-      .status(201)
-      .json({ message: "Category added successfully", category: newCategory });
+
+    res.status(201).json({ message: "Category added successfully", category: newCategory });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "An error occurred", error: error.message });
+    res.status(500).json({ message: "An error occurred", error: error.message });
   }
 };
 
@@ -152,6 +153,7 @@ const addProduct = async (req, res) => {
       base_price,
       discount_price,
       discount_percentage,
+      category,
       stock,
       color,
       quantity,
@@ -165,6 +167,7 @@ const addProduct = async (req, res) => {
       productImages,
       base_price,
       discount_price,
+      category,
       discount_percentage,
       stock,
       color,
@@ -260,29 +263,34 @@ const editProduct = async (req, res) => {
     const product = await Product.findById(id);
 
     if (!product) {
-      return res.status(400).json({ message: "Category doesn't exist" });
+      return res.status(400).json({ message: "Product doesn't exist" });
     }
 
-    // Update the category fields
+    // Update the product fields
     product.name = name;
     product.description = description;
     product.brand = brand;
+    product.productImages = productImages;
     product.base_price = base_price;
     product.discount_price = discount_price;
-    product.productImages = productImages;
     product.discount_percentage = discount_percentage;
     product.stock = stock;
     product.color = color;
     product.quantity = quantity;
     product.size = size;
 
-    await product.save(); // Save the updated category
+    await product.save(); // Ensure saving completes before responding
 
-    res.status(200).json({ message: "product successfully updated", product });
+    res
+      .status(200)
+      .json({ message: "Product successfully updated", product });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
+
 
 module.exports = {
   searchUsers,

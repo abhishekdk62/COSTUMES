@@ -2,6 +2,12 @@ const User = require("../models/userSchema");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library"); // Added for verifying Google token
+const client = new OAuth2Client(process.env.CLIENT_ID); // Initialize using CLIENT_ID from .env
+const Product = require("../models/productSchema");
+const Category = require("../models/categorySchema");
+const Review = require("../models/reviewSchema");
+const { log } = require("console");
 
 const signup = async (req, res) => {
   try {
@@ -72,8 +78,7 @@ const verifyOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;
     const user = await User.findOne({ email });
-    console.log(otp);
-    console.log(user.otp);
+
     if (!user) {
       return res.status(400).json({ message: "User not found." });
     }
@@ -102,10 +107,123 @@ const verifyOTP = async (req, res) => {
   }
 };
 
+const getNewArrivals = async (req, res) => {
+  try {
+    // Fetch the 4 most recent products
+    const newArrivals = await Product.find().sort({ createdAt: -1 }).limit(10);
+
+    res.json({
+      success: true,
+      data: newArrivals,
+      message: "New arrivals fetched successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching new arrivals",
+      error: error.message,
+    });
+  }
+};
+
+const categoryWiseProducs = async (req, res) => {
+  try {
+    const { catName } = req.body;
+    const trimmedCatName = catName.trim();
+    // Allow any whitespace after the trimmed string:
+    const regex = new RegExp(`^${trimmedCatName}\\s*$`, "i");
+    const category = await Category.findOne({ name: regex });
+
+    if (!category) {
+      return res.status(400).json({ message: `${catName} Category Not found` });
+    }
+
+    const prods = await Product.find({ category: category._id })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.json({
+      success: true,
+      data: prods,
+      message: `${catName} collections fetched successfully`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: `Error fetching ${catName} collections`,
+      error: error.message,
+    });
+  }
+};
+
+const getSimilarProducts = async (req, res) => {
+  try {
+    const { categoryId } = req.body;
+
+    const prods = await Product.find({ category: categoryId })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.json({
+      success: true,
+      data: prods,
+      message: `collections fetched successfully`,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: `Error fetching collections`,
+      error: error.message,
+    });
+  }
+};
+
+const filteredProducts = async (req, res) => {
+  try {
+    const { searchTerm, category, minPrice, maxPrice, sortBy } = req.body;
+
+    let query = {};
+    if (searchTerm) {
+      query.name = { $regex: searchTerm, $options: "i" }; // Case-insensitive search
+    }
+    if (category) {
+      query.category = category;
+    }
+
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      query.discount_price = { $gte: minPrice, $lte: maxPrice };
+    }
+
+    let sortOptions = {};
+    if (sortBy === "priceAsc") sortOptions.discount_price = 1;
+    if (sortBy === "priceDesc") sortOptions.discount_price = -1;
+    if (sortBy === "nameAsc") sortOptions.name = 1;
+    if (sortBy === "nameDesc") sortOptions.name = -1;
+
+    const products = await Product.find(query).sort(sortOptions);
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const searchProducts = async (req, res) => {
+  try {
+    const searchQuery = req.query.q || "";
+
+    const products = await Product.find({
+      name: { $regex: searchQuery, $options: "i" },
+      isDeleted: false,
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error in searchproducts:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 const resetPassword = async (req, res) => {
   try {
     const { email, password } = req.body;
-
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -121,5 +239,58 @@ const resetPassword = async (req, res) => {
       .json({ message: "Error updating password", error: error.message });
   }
 };
+const addReview = async (req, res) => {
+  try {
+    const { newReview, productId, userId } = req.body;
+    if (
+      newReview.text == null ||
+      newReview.rating == null ||
+      productId == null ||
+      userId == null
+    ) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    const newData = new Review({
+      productId,
+      userId,
+      rating: newReview.rating,
+      comment: newReview.text,
+    });
 
-module.exports = { signup, sendOTP, verifyOTP, resetPassword };
+    await newData.save();
+    res.status(200).json({ message: "Review added succesfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error Adding review", error: error.message });
+  }
+};
+const getReview = async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) {
+      return res.status(400).json({ message: "Product id not availabke" });
+    }
+    const reviews = await Review.find({ productId }).populate("userId");
+
+    res.status(200).json({ data: reviews });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching reviews", error: error.message });
+  }
+};
+
+module.exports = {
+  getSimilarProducts,
+  signup,
+  filteredProducts,
+  sendOTP,
+  verifyOTP,
+  addReview,
+  getReview,
+  getNewArrivals,
+  searchProducts,
+  resetPassword,
+  categoryWiseProducs,
+};
