@@ -7,10 +7,11 @@ import { Star } from "lucide-react";
 const ProductDetails = () => {
   const [productDetails, setProductDetails] = useState(null);
   const [selectedTab, setSelectedTab] = useState("Description");
-  const [colorClass, setColorClass] = useState();
   const [userInfo, setUserInfo] = useState(null);
   const [similarProducts, setSimilarProducts] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [stockMessage, setStockMessage] = useState("");
+  const [stockMessageColor, setStockMessageColor] = useState("");
   const [loading, setLoding] = useState(false);
   const [reviews, setReviews] = useState([
     { id: 1, name: "John Doe", rating: 4, text: "Great product!" },
@@ -25,7 +26,7 @@ const ProductDetails = () => {
         productId: productDetails._id,
         userId: userInfo._id,
       });
-      alert("Review Added")
+      alert("Review Added");
     } catch (error) {
       console.log(error);
     }
@@ -35,10 +36,8 @@ const ProductDetails = () => {
       const response = await axios.post("http://localhost:5000/user/reviews", {
         productId: productDetails._id,
       });
-      setReviews(response.data.data)
+      setReviews(response.data.data);
       console.log(response);
-      
-      
     } catch (error) {
       console.log(error);
     }
@@ -49,7 +48,6 @@ const ProductDetails = () => {
       fetchReviews();
     }
   }, [productDetails]);
-  
 
   const handleProductView = (product) => {
     localStorage.setItem("productInfo", JSON.stringify(product));
@@ -87,11 +85,35 @@ const ProductDetails = () => {
       }
     }
   }, []);
-
+  useEffect(() => {
+    if (productDetails) {
+      const stockNumber = productDetails.stock;
+      
+      
+      if (stockNumber === 0) {  // Check for 0 first
+        setStockMessage("Out of Stock");
+        setStockMessageColor("red");
+      } else if (stockNumber < 5) {
+        setStockMessage("Only a few left, hurry up!");
+        setStockMessageColor("orange");
+      } else {
+        setStockMessage("In Stock");
+        setStockMessageColor("green");
+      }
+    }
+  }, [productDetails]);  // Add dependency array
+  
   // Return a loading state until productDetails is available
   if (!productDetails) {
     return <ProductDetailShimmer />;
   }
+
+  const stockColors = {
+    green: "text-green-500",
+    orange: "text-orange-500",
+    red: "text-red-500",
+  };
+  
 
   return (
     <div className="container mx-auto p-4">
@@ -199,6 +221,11 @@ const ProductDetails = () => {
               </span>
             </div>
           </div>
+          <h1 className={`font-bold text-xl ${stockColors[stockMessageColor]}`}>
+  {stockMessage}
+</h1>
+
+
           <div className="flex flex-col space-y-2">
             <div className="flex items-center">
               <i className="fas fa-shield-alt text-gray-600 mr-2"></i>
@@ -260,14 +287,22 @@ const ProductDetails = () => {
                         size={16}
                         className={
                           i < review.rating
-                            ? "text-yellow-500"
+                            ? "text-yellow-500 fill-yellow-500"
                             : "text-gray-300"
                         }
                       />
                     ))}
                   </div>
                   <p className="text-gray-600 mt-1">{review.comment}</p>
-                  <p className="text-gray-600 mt-1 text-xs">{review.userId.email}</p>
+                  <div className="flex justify-between">
+                    <p className="text-gray-600 mt-1 text-xs">
+                      {review.userId.email}
+                    </p>
+
+                    <p className="text-gray-600 mt-1 text-xs">
+                      {review.updatedAt.split("T")[0]}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -290,7 +325,7 @@ const ProductDetails = () => {
                         size={20}
                         className={
                           i < newReview.rating
-                            ? "text-yellow-500"
+                            ? "text-yellow-500 fill-yellow-500"
                             : "text-gray-300"
                         }
                       />
@@ -308,7 +343,11 @@ const ProductDetails = () => {
               ></textarea>
               <button
                 className="mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-                onClick={handleAddReview}
+                onClick={() => {
+                  userInfo
+                    ? handleAddReview
+                    : alert("Please login to add review");
+                }}
               >
                 Submit Review
               </button>

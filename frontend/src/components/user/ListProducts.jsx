@@ -4,19 +4,26 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import ReactSlider from "react-slider";
 
-const ListProducts = () => {
 
+const ListProducts = () => {
   const searchTerm = useSelector((state) => state.search.searchTerm);
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [minPrice, setMinPrice] = useState(200);
   const [maxPrice, setMaxPrice] = useState(50000);
-  const [sortBy, setSortBy] = useState();
+  const [sortBy, setSortBy] = useState("");
   const [loading, setLoading] = useState(false);
   const [categoryList, setCategoryList] = useState([]);
+  const [error, setError] = useState("");
+
   const navigate = useNavigate();
-  const [error, setError] = useState();
-  const getPRoducts = async () => {
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Fetch products from backend with pagination
+  const getProducts = async () => {
     try {
       setLoading(true);
 
@@ -26,53 +33,64 @@ const ListProducts = () => {
         minPrice,
         maxPrice,
         sortBy,
+        page: currentPage,
+        limit: 10,
       };
 
       const response = await axios.post(
-        `http://localhost:5000/user/products`,
+        "http://localhost:5000/user/products",
         requestBody
       );
 
-      setProducts(response.data);
+      // Expected response format: { products, page, totalPages }
+      setProducts(response.data.products);
+      setCurrentPage(response.data.page);
+      setTotalPages(response.data.totalPages);
+      setError("");
     } catch (error) {
       console.log(error);
-
-      setError(error);
+      setError(error.message || "Error fetching products");
     } finally {
       setLoading(false);
     }
   };
+
+  // When filters change, reset page to 1
   useEffect(() => {
-    getPRoducts();
+    setCurrentPage(1);
   }, [searchTerm, minPrice, maxPrice, sortBy, selectedCategory]);
 
-  //!fetching categories for selection
+  // Fetch products when currentPage or any filter changes
+  useEffect(() => {
+    getProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm, minPrice, maxPrice, sortBy, selectedCategory]);
+
+  // Fetch categories for filter sidebar
   const fetchCategories = async (query) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/admin/searchcategories?q=${query}`
+                `http://localhost:5000/user/searchcategoriestofilter?q=${query}`
+
       );
-      if (response) {
-        // setCategoryList(response.data);
-        setCategoryList(response.data);
-      }
+      setCategoryList(response.data);
     } catch (error) {
       console.log("Failed to fetch categories. Please try again", error);
     }
   };
+
   useEffect(() => {
     fetchCategories("");
   }, []);
 
-  //!handle product
-
+  // Handle viewing a product
   const handleProductView = (product) => {
     localStorage.setItem("productInfo", JSON.stringify(product));
     navigate("/product");
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 pb-20">
       <div className="flex flex-col lg:flex-row">
         {/* Sidebar */}
         <div className="w-full lg:w-1/4 p-4 bg-white rounded-lg shadow-md">
@@ -80,15 +98,13 @@ const ListProducts = () => {
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">Categories</h3>
             <ul>
-              {categoryList.map((category,indx) => (
+              {categoryList.map((category, indx) => (
                 <li
-                  onClick={() => setSelectedCategory(category._id)}
-                  className="mb-2"
                   key={indx}
+                  onClick={() => setSelectedCategory(category._id)}
+                  className="mb-2 cursor-pointer"
                 >
-                  <a className="text-gray-700" href="#">
-                    {category.name}
-                  </a>
+                  <span className="text-gray-700">{category.name}</span>
                 </li>
               ))}
             </ul>
@@ -109,12 +125,11 @@ const ListProducts = () => {
               }}
               className="w-full mt-2"
               thumbClassName="h-4 w-4 bg-black rounded-full cursor-pointer"
-              trackClassName="h-2 rounded bg-gray-300" // Default track
+              trackClassName="h-2 rounded bg-gray-300"
               pearling
               minDistance={10}
             />
           </div>
-
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-2">Colors</h3>
             <div className="grid grid-cols-4 gap-2">
@@ -131,8 +146,8 @@ const ListProducts = () => {
                 "white",
               ].map((color) => (
                 <div
-                  className={`w-6 h-6 bg-${color} rounded-full`}
                   key={color}
+                  className={`w-6 h-6 bg-${color} rounded-full`}
                 ></div>
               ))}
             </div>
@@ -143,8 +158,8 @@ const ListProducts = () => {
               {["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"].map(
                 (size) => (
                   <button
-                    className="border border-gray-300 rounded-lg py-1"
                     key={size}
+                    className="border border-gray-300 rounded-lg py-1"
                   >
                     {size}
                   </button>
@@ -163,7 +178,7 @@ const ListProducts = () => {
                 "Elegant",
                 "Formal (evening)",
               ].map((style) => (
-                <li className="mb-2" key={style}>
+                <li key={style} className="mb-2">
                   <a className="text-gray-700" href="#">
                     {style}
                   </a>
@@ -173,11 +188,14 @@ const ListProducts = () => {
           </div>
         </div>
 
+        {/* Main Content */}
         <div className="w-full lg:w-3/4 p-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">Explore Collections</h1>
             <div>
-              <p className="text-red-500 text-center my-4">{error}</p>
+              {error && (
+                <p className="text-red-500 text-center my-4">{error}</p>
+              )}
               <select onChange={(e) => setSortBy(e.target.value)}>
                 <option value="">Sort By</option>
                 <option value="priceAsc">Price: Low to High</option>
@@ -193,9 +211,9 @@ const ListProducts = () => {
             ) : (
               products.map((product) => (
                 <div
+                  key={product.name}
                   onClick={() => handleProductView(product)}
                   className="bg-white cursor-pointer rounded-lg shadow-md p-4"
-                  key={product.name}
                 >
                   <img
                     src={product.productImages[0]}
@@ -203,24 +221,60 @@ const ListProducts = () => {
                     className="w-full h-48 object-cover rounded-lg mb-4"
                   />
                   <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-lg font-semibold">{product.title}</h2>
+                    <h2 className="text-lg font-semibold">
+                      {product.title}
+                    </h2>
                     <button className="text-gray-400">
                       <i className="far fa-heart"></i>
                     </button>
                   </div>
                   <p className="text-lg font-bold">{product.name}</p>
-
                   <p className="text-gray-500 mb-2">{product.brand}</p>
-                  <p className="text-lg font-bold">{product.discount_price}</p>
+                  <p className="text-lg font-bold">
+                    {product.discount_price}
+                  </p>
                 </div>
               ))
             )}
           </div>
         </div>
       </div>
+
+      {/* Fixed Pagination UI at Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow">
+        <div className="flex justify-center items-center space-x-4">
+          <button
+            onClick={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+              }
+            }}
+            disabled={currentPage <= 1}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => {
+              if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
+              }
+            }}
+            disabled={currentPage >= totalPages}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
+
+
 
 const ProductListShimmer = () => {
   return (

@@ -5,6 +5,7 @@ import Header from "../../components/common/Header";
 import Category from "../../components/admin/CategoryList";
 import Customer from "../../components/admin/UserList";
 import Products from "../../components/admin/Products";
+import Coupons from "../../components/admin/Coupons";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState(localStorage.getItem("activeTab"));
@@ -22,7 +23,7 @@ const Dashboard = () => {
           {activeTab === "customer" && <Customer />}
           {activeTab === "category" && <Category />}
           {activeTab === "products" && <Products />}
-          <Pagination />
+          {activeTab === "coupon" && <Coupons />}
         </div>
       </div>
     </>

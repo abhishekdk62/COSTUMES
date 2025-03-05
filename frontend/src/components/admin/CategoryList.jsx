@@ -1,19 +1,45 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { X, Search } from "lucide-react";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, CheckCircle } from "lucide-react";
 
 //!  Category card
-const CategoryCard = ({ id, name, thumbnail, fetchCategories, setEditCategory }) => {
+const CategoryCard = ({
+  id,
+  name,
+  thumbnail,
+  fetchCategories,
+  setEditCategory,
+  showRemovedCategory,
+}) => {
+  const restoreCategory = async () => {
+    try {
+      const response = await axios.put(
+        "http://localhost:5000/admin/restorecat",
+        {
+          id: id,
+        }
+      );
+      if (response.status == 200) {
+        alert("Category restored");
+      }
+      fetchCategories()
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const deleteCategory = async () => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this category?");
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this category?"
+    );
     if (confirmDelete) {
       try {
         const response = await axios.put(
-          `http://localhost:5000/admin/softdelete/${id}`, 
-          { isDeleted: true }  // Updating the isDeleted field
+          `http://localhost:5000/admin/softdelete/${id}`,
+          { isDeleted: true } // Updating the isDeleted field
         );
-          fetchCategories(""); // Ensure correct fetching
+        fetchCategories(""); // Ensure correct fetching
         alert(response.data.message);
       } catch (error) {
         alert(error?.response?.data?.message || "Something went wrong");
@@ -28,19 +54,32 @@ const CategoryCard = ({ id, name, thumbnail, fetchCategories, setEditCategory })
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center relative">
-      <div
-        onClick={deleteCategory}
-        className="cursor-pointer absolute top-2 right-2 text-gray-500 hover:text-red-500"
-      >
-        <Trash2 size={20} />
-      </div>
+      {showRemovedCategory ? (
+        <div
+          onClick={restoreCategory}
+          className="cursor-pointer absolute top-2 right-2 text-green-500 hover:text-green-700"
+        >
+          <CheckCircle size={20} />
+        </div>
+      ) : (
+        <div
+          onClick={deleteCategory}
+          className="cursor-pointer absolute top-2 right-2 text-gray-500 hover:text-red-500"
+        >
+          <Trash2 size={20} />
+        </div>
+      )}
       <div
         onClick={handleEdit}
         className="cursor-pointer absolute top-2 right-8 text-gray-500 hover:text-blue-500"
       >
         <Edit size={20} />
       </div>
-      <img src={thumbnail} alt={`${name} category`} className="w-24 h-24 mb-4 rounded-full" />
+      <img
+        src={thumbnail}
+        alt={`${name} category`}
+        className="w-24 h-24 mb-4 rounded-full"
+      />
       <h3 className="text-lg font-bold">{name}</h3>
     </div>
   );
@@ -58,25 +97,29 @@ const CategoryCardShimmer = () => {
 };
 
 //!  Category List
-
-const CategoryList = ({ setShowAddCategory, setEditCategory }) => {
+const CategoryList = ({ setShowAddCategory, setEditCategory, setShowRemovedCategory }) => {
   const [searchInput, setSearchInput] = useState("");
   const [categorieList, setCategoryList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetchCategories("");
-  }, []);
-
-  const fetchCategories = async (query) => {
+  // Fetch categories with optional search query and page number.
+  const fetchCategories = async (query = "", page = 1) => {
     try {
       setLoading(true);
       setError(null);
       const response = await axios.get(
-        `http://localhost:5000/admin/searchcategories?q=${query}`
+        `http://localhost:5000/admin/searchcategories?q=${query}&page=${page}&limit=10`
       );
-      setCategoryList(response.data);
+      // Assuming the backend response structure:
+      // { categories, total, page, totalPages }
+      setCategoryList(response.data.categories);
+      setTotalPages(response.data.totalPages);
+      setCurrentPage(response.data.page);
     } catch (err) {
       setError("Failed to fetch categories. Please try again.");
     } finally {
@@ -84,81 +127,126 @@ const CategoryList = ({ setShowAddCategory, setEditCategory }) => {
     }
   };
 
+  // Run fetchCategories on component mount.
+  useEffect(() => {
+    fetchCategories("");
+  }, []);
+
+  // Handle search button click.
   const handleSearch = () => {
-    if (searchInput.trim() !== "") fetchCategories(searchInput);
+    if (searchInput.trim() !== "") {
+      // Reset to page 1 when performing a search.
+      fetchCategories(searchInput, 1);
+    }
   };
 
   return (
-    <>
-      {/* Search Bar Section */}
-      <div className="container mx-auto p-6">
-        <div className="relative w-full flex items-center">
-          {/* Search Input */}
-          <div className="relative flex-grow">
-            <input
-              className="w-[90%] p-2 pr-10 border rounded-md"
-              placeholder="Search categories"
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-            {searchInput && (
+    <div className="container mx-auto p-6">
+      {/* Categories Section */}
+      <div className="mt-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Categories</h1>
+          <div className="flex space-x-4">
+            <div className="relative w-full flex items-center space-x-4">
+              {/* Search Input */}
+              <div className="relative flex-grow">
+                <input
+                  className="w-full p-2 pr-10 border rounded-md"
+                  placeholder="Search categories"
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+                {searchInput && (
+                  <button
+                    className="cursor-pointer absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    onClick={() => {
+                      setSearchInput("");
+                      fetchCategories("");
+                    }}
+                  >
+                    <X size={25} />
+                  </button>
+                )}
+              </div>
+              {/* Search Button */}
               <button
-                className="cursor-pointer absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                onClick={() => {
-                  fetchCategories("");
-                  setSearchInput("");
-                }}
+                onClick={handleSearch}
+                className="bg-blue-600 cursor-pointer text-white w-[140px] h-[40px] rounded-md flex justify-center items-center"
               >
-                <X size={25} />
+                <Search size={18} className="mr-2" /> Search
               </button>
-            )}
-          </div>
-
-          {/* Search Button */}
-          <button
-            onClick={handleSearch}
-            className="bg-blue-600 cursor-pointer text-white w-[140px] h-[40px] rounded-md flex justify-center items-center"
-          >
-            <Search size={18} className="mr-2" /> Search
-          </button>
-        </div>
-
-        {/* Categories Section */}
-        <div className="mt-6">
-          <div className="flex justify-between">
-            <h1 className="text-2xl font-bold mb-6">Categories</h1>
+            </div>
             <button
               onClick={() => setShowAddCategory(true)}
-              className="bg-green-500 cursor-pointer text-white w-[140px] h-[40px] rounded-md"
+              className="bg-purple-600 cursor-pointer text-white w-[140px] h-[40px] rounded-md flex justify-center items-center"
             >
-              Add Category
+              <i className="fas fa-plus mr-2"></i>
+              Add
+            </button>
+            <button
+              onClick={() => setShowRemovedCategory(true)}
+              className="bg-red-600 cursor-pointer text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+            >
+              <i className="fa-solid fa-trash mr-2"></i>
+              <span>Removed</span>
             </button>
           </div>
+        </div>
 
-          {/* Error Message */}
-          {error && <p className="text-red-500 text-center">{error}</p>}
+        {/* Error Message */}
+        {error && <p className="text-red-500 text-center">{error}</p>}
 
-          {/* Categories Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {loading
-              ? [...Array(8)].map((_, index) => (
-                  <CategoryCardShimmer key={index} />
-                ))
-              : categorieList.map((category) => (
-                  <CategoryCard
-                    key={category._id}
-                    id={category._id}
-                    name={category.name}
-                    thumbnail={category.thumbnail}
-                    fetchCategories={fetchCategories}
-                    setEditCategory={setEditCategory}
-                  />
-                ))}
-          </div>
+        {/* Categories Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {loading
+            ? [...Array(8)].map((_, index) => (
+                <CategoryCardShimmer key={index} />
+              ))
+            : categorieList.map((category) => (
+                <CategoryCard
+                  key={category._id}
+                  id={category._id}
+                  name={category.name}
+                  thumbnail={category.thumbnail}
+                  fetchCategories={fetchCategories}
+                  setEditCategory={setEditCategory}
+                />
+              ))}
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow">
+  <div className="flex justify-center items-center space-x-4">
+          <button
+            onClick={() => {
+              if (currentPage > 1) {
+                fetchCategories(searchInput, currentPage - 1);
+              }
+            }}
+            disabled={currentPage <= 1}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => {
+              if (currentPage < totalPages) {
+                fetchCategories(searchInput, currentPage + 1);
+              }
+            }}
+            disabled={currentPage >= totalPages}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       </div>
-    </>
+    </div>
+    </div>
   );
 };
 
@@ -175,16 +263,19 @@ const AddCategory = ({ setShowAddCategory }) => {
   const handleThumbnailUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", "COSTUMES"); // your upload preset
 
     try {
-      const res = await fetch("https://api.cloudinary.com/v1_1/dv8xenucq/image/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/dv8xenucq/image/upload",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
       const data = await res.json();
       setThumbnail(data.secure_url);
     } catch (error) {
@@ -195,12 +286,15 @@ const AddCategory = ({ setShowAddCategory }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5000/admin/addcategorys", {
-        categoryName,
-        description,
-        discount,
-        thumbnail, // sending the thumbnail URL to the backend
-      });
+      const response = await axios.post(
+        "http://localhost:5000/admin/addcategorys",
+        {
+          categoryName,
+          description,
+          discount,
+          thumbnail, // sending the thumbnail URL to the backend
+        }
+      );
       alert("Category added successfully!");
       setCategoryName("");
       setDescription("");
@@ -272,7 +366,11 @@ const AddCategory = ({ setShowAddCategory }) => {
                     src={thumbnail}
                     alt="Thumbnail"
                     className="mx-auto mb-2"
-                    style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      objectFit: "cover",
+                    }}
                   />
                 ) : (
                   <img
@@ -385,10 +483,7 @@ const AddCategory = ({ setShowAddCategory }) => {
   );
 };
 
-
-
 //!  Edit category
-
 
 const EditCategory = ({ setEditCategory }) => {
   const [categoryId, setCategoryId] = useState("");
@@ -460,9 +555,7 @@ const EditCategory = ({ setEditCategory }) => {
       );
       alert(response.data.message);
     } catch (error) {
-      console.error(
-        error.response?.data?.message || error.message
-      );
+      console.error(error.response?.data?.message || error.message);
     }
   };
 
@@ -646,8 +739,76 @@ const EditCategory = ({ setEditCategory }) => {
     </div>
   );
 };
+const RemovedCategory = ({ setShowRemovedCategory, showRemovedCategory }) => {
+  const [loading, setLoading] = useState(true);
+  const [categorieList, setCategoryList] = useState([]);
+  const [editCategory, setEditCategory] = useState(null);
 
+  // Define fetchCategories outside useEffect so it can be used by child components
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        "http://localhost:5000/admin/searchdeletedcat"
+      );
+      setCategoryList(response.data);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  return (
+    <div className="container mx-auto p-6">
+      {/* Header Section */}
+      <div className="mt-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Removed Categories</h1>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setShowRemovedCategory(false)}
+              className="bg-purple-600 text-white w-[140px] h-[40px] rounded-md flex justify-center items-center"
+            >
+              <i className="fas fa-plus mr-2"></i>
+              Add
+            </button>
+            <button
+              onClick={() => setShowRemovedCategory(false)}
+              className="bg-green-600 cursor-pointer text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+            >
+              <i className="fa-solid fa-user mr-2"></i>
+              <span>Active</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Categories Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {loading
+            ? [...Array(8)].map((_, index) => (
+                <CategoryCardShimmer key={index} />
+              ))
+            : categorieList.map((category) => (
+                <CategoryCard
+                  key={category._id}
+                  id={category._id}
+                  name={category.name}
+                  thumbnail={category.thumbnail}
+                  fetchCategories={fetchCategories}
+                  setEditCategory={setEditCategory}
+                  showRemovedCategory={showRemovedCategory}
+                />
+              ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 //!  Category
 
@@ -658,20 +819,30 @@ const Category = () => {
   const [editCategory, setEditCategory] = useState(
     localStorage.getItem("editCategory") === "true"
   ); // Track the category being edited
+  const [showRemovedCategory, setShowRemovedCategory] = useState(
+    localStorage.getItem("showRemovedCategory") === "true"
+  ); // Track the category being edited
 
   useEffect(() => {
     localStorage.setItem("showAddCategory", showAddCategory);
     localStorage.setItem("editCategory", editCategory);
+    localStorage.setItem("showRemovedCategory", showRemovedCategory);
   }, [showAddCategory, editCategory]);
 
   return editCategory ? (
     <EditCategory setEditCategory={setEditCategory} />
   ) : showAddCategory ? (
     <AddCategory setShowAddCategory={setShowAddCategory} />
+  ) : showRemovedCategory ? (
+    <RemovedCategory
+      setShowRemovedCategory={setShowRemovedCategory}
+      showRemovedCategory={showRemovedCategory}
+    />
   ) : (
     <CategoryList
       setEditCategory={setEditCategory}
       setShowAddCategory={setShowAddCategory}
+      setShowRemovedCategory={setShowRemovedCategory}
     />
   );
 };

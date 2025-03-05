@@ -1,51 +1,56 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react"; // Import 
-import { Search } from "lucide-react";
+import { X, Search } from "lucide-react";
 
 const Customer = () => {
-  const [userList, setUserList] = useState([]); // Initialize as an empty array
-  const [loading, setLoading] = useState(false); // For loading state during API call
+  const [userList, setUserList] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [error, setError] = useState("");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
-    fetchUsers("");
+    fetchUsers("", 1);
   }, []);
 
-  const fetchUsers = async (searchQuery = "") => {
+  const fetchUsers = async (searchQuery = "", page = 1) => {
     setLoading(true);
     try {
+      const queryString = searchQuery
+        ? `?q=${searchQuery}&page=${page}&limit=10`
+        : `?page=${page}&limit=6`;
       const { data } = await axios.get(
-        `http://localhost:5000/admin/searchusers${searchQuery ? `?q=${searchQuery}` : ""}`
+        `http://localhost:5000/admin/searchusers${queryString}`
       );
-      setUserList(data);
-      setError(""); // Reset error on success
-    } catch (error) {
-      if (error.response) {
-        // Server responded with an error status
-        if (error.response.status === 404) {
+      // Expecting backend to return { users, page, totalPages, ... }
+      setUserList(data.users);
+      setCurrentPage(data.page);
+      setTotalPages(data.totalPages);
+      setError("");
+    } catch (err) {
+      if (err.response) {
+        if (err.response.status === 404) {
           setError("No users found");
-          setUserList(data)
+          setUserList([]);
         } else {
-          setError(error.response.data.message || "Server error");
+          setError(err.response.data.message || "Server error");
         }
-      } else if (error.request) {
-        // Request was made but no response received
+      } else if (err.request) {
         setError("No response from server");
       } else {
-        // Something else happened
         setError("Error fetching users");
       }
-      console.log("Error fetching users:", error);
+      console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
     }
   };
-  
 
   const handleSearch = () => {
-    fetchUsers(searchInput.trim()); // Call the same API with a search term
+    fetchUsers(searchInput.trim(), 1);
   };
 
   const updateStatus = async (id, status) => {
@@ -54,16 +59,15 @@ const Customer = () => {
         _id: id,
         status,
       });
-
       setUserList((prevUsers) =>
         prevUsers.map((user) =>
           user._id === id ? { ...user, status: data.updatedUser.status } : user
         )
       );
-    } catch (error) {
+    } catch (err) {
       console.error(
         "Error updating status:",
-        error.response?.data?.message || error.message
+        err.response?.data?.message || err.message
       );
     }
   };
@@ -82,41 +86,43 @@ const Customer = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
-    <div className="relative w-full flex items-center">
-      {/* Search Input */}
-      <div className="relative flex-grow">
-        <input
-          className="w-full p-2 pr-10 border rounded-md"
-          placeholder="Search users"
-          type="text"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-        {searchInput && (
-          <button 
-            className="cursor-pointer absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            onClick={() => {
-              fetchUsers("");
-              setSearchInput("");
-            }}
+    <div className="max-w-7xl mx-auto p-6 pb-20">
+      {/* Header with Title and Search Bar */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Customer</h1>
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search users"
+              className="pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+            {searchInput && (
+              <button
+                onClick={() => {
+                  setSearchInput("");
+                  fetchUsers("", 1);
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <X size={25} />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={handleSearch}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center space-x-2"
           >
-            <X size={25} />
+            <Search size={18} className="mr-2" />
+            <span>Search</span>
           </button>
-        )}
+        </div>
       </div>
-  
-      {/* Search Button */}
-      <button
-        onClick={handleSearch}
-        className="bg-blue-600 cursor-pointer text-white ml-4 px-4 py-2 rounded-md flex items-center"
-      >
-        <Search size={18} className="mr-2" /> Search
-      </button>
-    </div>
-  
-      <div className="flex justify-center">{error && <p className="text-red-500">{error}</p>}</div>
-      <h2 className="text-2xl font-bold mb-4">Customer</h2>
+
+      {/* Error Message */}
+      {error && <div className="mb-4 text-center text-red-500">{error}</div>}
 
       {/* Table Section */}
       {loading ? (
@@ -136,7 +142,9 @@ const Customer = () => {
             {Array.from({ length: 3 }).map((_, index) => (
               <tr
                 key={index}
-                className={`border-b ${index % 2 === 0 ? "bg-gray-50" : ""}`}
+                className={`border-b ${
+                  index % 2 === 0 ? "bg-gray-50" : ""
+                }`}
               >
                 <td className="p-3 flex items-center">
                   <div className="w-10 h-10 rounded-full mr-3 bg-gray-200 animate-pulse"></div>
@@ -179,14 +187,16 @@ const Customer = () => {
             {userList.length > 0 ? (
               userList.map((customer, index) => (
                 <tr
-                  className={`border-b ${index % 2 === 0 ? "bg-gray-50" : ""}`}
                   key={customer._id}
+                  className={`border-b ${
+                    index % 2 === 0 ? "bg-gray-50" : ""
+                  }`}
                 >
                   <td className="p-3 flex items-center">
                     <img
                       alt="Customer avatar"
-                      className="w-10 h-10 rounded-full mr-3"
                       src="https://placehold.co/40x40"
+                      className="w-10 h-10 rounded-full mr-3"
                     />
                     {customer.firstname}
                   </td>
@@ -204,22 +214,24 @@ const Customer = () => {
                       {customer.status}
                     </span>
                   </td>
-                  <td>
+                  <td className="p-3">
                     <button
                       onClick={() => {
                         const confirmChange = window.confirm(
-                          `Are you sure want to ${
+                          `Are you sure you want to ${
                             customer.status === "Active" ? "Block" : "Unblock"
                           } ${customer.firstname}?`
                         );
                         if (confirmChange) {
                           updateStatus(
                             customer._id,
-                            customer.status === "Active" ? "Blocked" : "Active"
+                            customer.status === "Active"
+                              ? "Blocked"
+                              : "Active"
                           );
                         }
                       }}
-                      className={`px-5 py-1 min-w-[100px]  rounded-md cursor-pointer text-white text-sm font-medium transition ${
+                      className={`px-5 py-1 min-w-[100px] rounded-md cursor-pointer text-white text-sm font-medium transition ${
                         customer.status === "Active"
                           ? "bg-red-400 hover:bg-red-500"
                           : "bg-green-400 hover:bg-green-500"
@@ -240,6 +252,37 @@ const Customer = () => {
           </tbody>
         </table>
       )}
+
+      {/* Fixed Pagination UI at Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow">
+        <div className="flex justify-center items-center space-x-4">
+          <button
+            onClick={() => {
+              if (currentPage > 1) {
+                fetchUsers(searchInput, currentPage - 1);
+              }
+            }}
+            disabled={currentPage <= 1}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => {
+              if (currentPage < totalPages) {
+                fetchUsers(searchInput, currentPage + 1);
+              }
+            }}
+            disabled={currentPage >= totalPages}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -5,25 +5,44 @@ const Product = require("../models/productSchema");
 const searchUsers = async (req, res) => {
   try {
     const searchQuery = req.query.q || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
-    const users = await User.find(
-      { firstname: { $regex: searchQuery, $options: "i" } }, // Search query
-      "-password" // Exclude passwords
-    ).sort({ createdAt: -1 }); // Sort by latest first
+    const filter = {
+      firstname: { $regex: searchQuery, $options: "i" }
+    };
 
-    res.json(users);
+    // Count total matching users
+    const total = await User.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+
+    // Retrieve paginated users (excluding the password field)
+    const users = await User.find(filter, "-password")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      users,
+      total,
+      page,
+      totalPages,
+    });
   } catch (error) {
     console.error("Error in searchUsers:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 const addCategorys = async (req, res) => {
   try {
     const { categoryName, description, discount, thumbnail } = req.body;
 
     // Validate required fields
     if (!categoryName || !description || !discount || !thumbnail) {
-      return res.status(400).json({ message: "Enter all the fields including thumbnail" });
+      return res
+        .status(400)
+        .json({ message: "Enter all the fields including thumbnail" });
     }
 
     // Check if the category already exists
@@ -42,19 +61,82 @@ const addCategorys = async (req, res) => {
 
     await newCategory.save(); // Ensure saving completes before responding
 
-    res.status(201).json({ message: "Category added successfully", category: newCategory });
+    res
+      .status(201)
+      .json({ message: "Category added successfully", category: newCategory });
   } catch (error) {
-    res.status(500).json({ message: "An error occurred", error: error.message });
+    res
+      .status(500)
+      .json({ message: "An error occurred", error: error.message });
   }
 };
+const filteredProducts = async (req, res) => {
+  try {
+    const { searchTerm, category, minPrice, maxPrice, sortBy } = req.body;
 
+    let query = {};
+    if (searchTerm) {
+      query.name = { $regex: searchTerm, $options: "i" }; // Case-insensitive search
+    }
+    if (category) {
+      query.category = category;
+    }
+
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      query.discount_price = { $gte: minPrice, $lte: maxPrice };
+    }
+
+    let sortOptions = {};
+    if (sortBy === "priceAsc") sortOptions.discount_price = 1;
+    if (sortBy === "priceDesc") sortOptions.discount_price = -1;
+    if (sortBy === "nameAsc") sortOptions.name = 1;
+    if (sortBy === "nameDesc") sortOptions.name = -1;
+
+    const products = await Product.find(query).sort(sortOptions);
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 const searchCategories = async (req, res) => {
   try {
     const searchQuery = req.query.q || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
+    // Build the filter object
+    const filter = {
+      name: { $regex: searchQuery, $options: "i" },
+      isDeleted: false, // Only active categories
+    };
+
+    // Count the total number of matching documents
+    const total = await Category.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+
+    // Retrieve the categories with pagination
+    const categories = await Category.find(filter)
+      .sort({ createdAt: -1 }) // Sort by latest first
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.json({
+      categories,
+      total,
+      page,
+      totalPages,
+    });
+  } catch (error) {
+    console.error("Error in searchCategories:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+const searchDeletedCategories = async (req, res) => {
+  try {
     const categories = await Category.find({
-      name: { $regex: searchQuery, $options: "i" }, // Case-insensitive search
-      isDeleted: false, // Exclude soft-deleted categories
+      isDeleted: true, // Exclude soft-deleted categories
     }).sort({ createdAt: -1 }); // Sort by latest first
 
     res.json(categories);
@@ -156,7 +238,6 @@ const addProduct = async (req, res) => {
       category,
       stock,
       color,
-      quantity,
       size,
     } = req.body;
 
@@ -171,7 +252,6 @@ const addProduct = async (req, res) => {
       discount_percentage,
       stock,
       color,
-      quantity,
       size,
     });
 
@@ -187,10 +267,45 @@ const addProduct = async (req, res) => {
 const searchProducts = async (req, res) => {
   try {
     const searchQuery = req.query.q || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const filter = {
+      name: { $regex: searchQuery, $options: "i" },
+      isDeleted: false,
+    };
+
+    // Count total matching products
+    const total = await Product.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+
+    // Retrieve paginated products
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      products,
+      total,
+      page,
+      totalPages,
+    });
+  } catch (error) {
+    console.error("Error in searchProducts:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+
+const searchDeletedProducts = async (req, res) => {
+  try {
+    const searchQuery = req.query.q || "";
 
     const products = await Product.find({
       name: { $regex: searchQuery, $options: "i" },
-      isDeleted: false,
+      isDeleted: true,
     }).sort({ createdAt: -1 });
 
     res.status(200).json(products);
@@ -281,27 +396,64 @@ const editProduct = async (req, res) => {
 
     await product.save(); // Ensure saving completes before responding
 
-    res
-      .status(200)
-      .json({ message: "Product successfully updated", product });
+    res.status(200).json({ message: "Product successfully updated", product });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
+const restoreProduct = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) {
+      return res.status(400).json("Id not found");
+    }
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { isDeleted: false },
+      { new: true }
+    );
+    res.status(200).json("Product updated");
+  } catch (error) {
+    res.status(500).json("Internal server error", error);
+  }
+};
+
+const restoreCategory = async (req, res) => {
+  try {
+    const { id } = req.body;
+    
+    if(!id)
+    {
+      return res.status(400).json({message:"category id not available"})
+    }
+    const category = await Category.findByIdAndUpdate(
+      id,
+      { isDeleted: false },
+      { new: true }
+    );
+    res.status(200).json({message:"Category updated from backend"});
+  } catch (error) {
+    res.status(500).json({"error is":error});
+  }
+};
 
 module.exports = {
   searchUsers,
+  restoreProduct,
   addCategorys,
   searchCategories,
+  searchDeletedCategories,
   editCategories,
   softdelete,
   addProduct,
   getCategory,
   searchProducts,
+  filteredProducts,
   getProduct,
+  restoreCategory,
+  searchDeletedProducts,
   softdeleteProduct,
   editProduct,
 };

@@ -13,7 +13,6 @@ const productSchema = new mongoose.Schema(
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     color: { type: String },
     isDeleted:{type:Boolean,default:false},
-    quantity: { type: Number },
     size: { type: String },
   },
   { timestamps: true } // Automatically adds createdAt & updatedAt

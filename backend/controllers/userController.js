@@ -134,7 +134,7 @@ const categoryWiseProducs = async (req, res) => {
     const category = await Category.findOne({ name: regex });
 
     if (!category) {
-      return res.status(400).json({ message: `${catName} Category Not found` });
+      return res.status(400).json({ message: `${catName} Category Not found from backend` });
     }
 
     const prods = await Product.find({ category: category._id })
@@ -177,8 +177,13 @@ const getSimilarProducts = async (req, res) => {
 
 const filteredProducts = async (req, res) => {
   try {
-    const { searchTerm, category, minPrice, maxPrice, sortBy } = req.body;
+    const { searchTerm, category, minPrice, maxPrice, sortBy, page, limit } = req.body;
 
+    // Set default pagination values if not provided
+    const currentPage = parseInt(page) || 1;
+    const perPage = parseInt(limit) || 10;
+
+    // Build query based on filters
     let query = {};
     if (searchTerm) {
       query.name = { $regex: searchTerm, $options: "i" }; // Case-insensitive search
@@ -186,24 +191,39 @@ const filteredProducts = async (req, res) => {
     if (category) {
       query.category = category;
     }
-
     if (minPrice !== undefined && maxPrice !== undefined) {
       query.discount_price = { $gte: minPrice, $lte: maxPrice };
     }
 
+    // Build sort options based on sortBy
     let sortOptions = {};
     if (sortBy === "priceAsc") sortOptions.discount_price = 1;
     if (sortBy === "priceDesc") sortOptions.discount_price = -1;
     if (sortBy === "nameAsc") sortOptions.name = 1;
     if (sortBy === "nameDesc") sortOptions.name = -1;
 
-    const products = await Product.find(query).sort(sortOptions);
-    res.json(products);
+    // Count total matching documents
+    const total = await Product.countDocuments(query);
+    const totalPages = Math.ceil(total / perPage);
+
+    // Retrieve paginated products
+    const products = await Product.find(query)
+      .sort(sortOptions)
+      .skip((currentPage - 1) * perPage)
+      .limit(perPage);
+
+    res.status(200).json({
+      products,
+      total,
+      page: currentPage,
+      totalPages,
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error", message: error.message });
   }
 };
+
 
 const searchProducts = async (req, res) => {
   try {
@@ -280,6 +300,21 @@ const getReview = async (req, res) => {
       .json({ message: "Error fetching reviews", error: error.message });
   }
 };
+const searchCategoriesToFilter = async (req, res) => {
+  try {
+    const searchQuery = req.query.q || "";
+
+    const categories = await Category.find({
+      name: { $regex: searchQuery, $options: "i" }, // Case-insensitive search
+      isDeleted: false, // Exclude soft-deleted categories
+    }).sort({ createdAt: -1 }); // Sort by latest first
+
+    res.json(categories);
+  } catch (error) {
+    console.error("Error in searchCategories:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
 
 module.exports = {
   getSimilarProducts,
@@ -289,6 +324,7 @@ module.exports = {
   verifyOTP,
   addReview,
   getReview,
+  searchCategoriesToFilter,
   getNewArrivals,
   searchProducts,
   resetPassword,
