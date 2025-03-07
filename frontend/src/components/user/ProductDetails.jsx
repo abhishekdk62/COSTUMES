@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useDebugValue, useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import ReactImageMagnify from "react-image-magnify";
@@ -19,29 +19,56 @@ const ProductDetails = () => {
   const [newReview, setNewReview] = useState({ rating: 5, text: "" });
 
   const navigate = useNavigate();
-  const handleAddReview = async () => {
-    try {
-      const response = await axios.post("http://localhost:5000/user/review", {
-        newReview,
-        productId: productDetails._id,
-        userId: userInfo._id,
-      });
-      alert("Review Added");
-    } catch (error) {
-      console.log(error);
-    }
-  };
+
   const fetchReviews = async () => {
     try {
       const response = await axios.post("http://localhost:5000/user/reviews", {
         productId: productDetails._id,
       });
       setReviews(response.data.data);
-      console.log(response);
     } catch (error) {
       console.log(error);
     }
   };
+  const handleAddReview = async () => {
+    try {
+      if (!newReview.text || !newReview.rating) {
+        alert("Please enter Rating and the details");
+        return;
+      }
+
+      const response = await axios.post("http://localhost:5000/user/review", {
+        newReview,
+        productId: productDetails._id,
+        userId: userInfo._id,
+      });
+      if (response.status == 200) {
+        alert("Review Added");
+      }
+      fetchReviews();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const [catDetails, setCatDetails] = useState();
+  useEffect(() => {
+    if (!productDetails?.category) return; // Prevents the request when _id is missing
+    const getCatName = async () => {
+      try {
+        const response = await axios.post(
+          "http://localhost:5000/user/getcategoryname",
+          {
+            id: productDetails?.category,
+          }
+        );
+        setCatDetails(response.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    getCatName();
+  }, [productDetails]);
 
   useEffect(() => {
     if (productDetails && productDetails._id) {
@@ -85,12 +112,36 @@ const ProductDetails = () => {
       }
     }
   }, []);
+
+  const [rating, setRating] = useState([
+    { _id: 0, averageRating: 0, totalReviews: 0 },
+  ]);
+
+  useEffect(() => {
+    const val = localStorage.getItem("productInfo");
+    const parsedVal = JSON.parse(val);
+
+    const getRating = async () => {
+      try {
+        const response = await axios.post("http://localhost:5000/user/rating", {
+          id: parsedVal._id,
+        });
+        setRating(response.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    if (parsedVal) {
+      getRating();
+    }
+  }, []);
+
   useEffect(() => {
     if (productDetails) {
       const stockNumber = productDetails.stock;
-      
-      
-      if (stockNumber === 0) {  // Check for 0 first
+
+      if (stockNumber === 0) {
+        // Check for 0 first
         setStockMessage("Out of Stock");
         setStockMessageColor("red");
       } else if (stockNumber < 5) {
@@ -101,8 +152,8 @@ const ProductDetails = () => {
         setStockMessageColor("green");
       }
     }
-  }, [productDetails]);  // Add dependency array
-  
+  }, [productDetails]); // Add dependency array
+
   // Return a loading state until productDetails is available
   if (!productDetails) {
     return <ProductDetailShimmer />;
@@ -113,21 +164,34 @@ const ProductDetails = () => {
     orange: "text-orange-500",
     red: "text-red-500",
   };
-  
+  const rat =
+    rating.length > 0 && rating[0]?.averageRating
+      ? rating[0].averageRating.toFixed(1)
+      : "N/A";
+
+  const handleCrumbsByCat = () => {
+    navigate(`/products?category=${encodeURIComponent(catDetails._id)}`);
+  };
 
   return (
     <div className="container mx-auto p-4">
       <nav className="text-gray-600 text-sm mb-4">
-        <a className="hover:underline" href="#">
+        <a
+          onClick={() => navigate("/products")}
+          className="cursor-pointer hover:underline"
+        >
           Shop
         </a>
         &gt;
-        <a className="hover:underline" href="#">
-          Women
+        <a
+          onClick={handleCrumbsByCat}
+          className="cursor-pointer hover:underline"
+        >
+          {catDetails?.name}
         </a>
         &gt;
-        <a className="hover:underline" href="#">
-          Top
+        <a className="cursor-pointer hover:underline">
+          {productDetails.subCategory}
         </a>
       </nav>
       {/* Product Section */}
@@ -180,14 +244,21 @@ const ProductDetails = () => {
           <h1 className="text-2xl font-bold mb-2">{productDetails.name}</h1>
           <div className="flex items-center mb-4">
             <div className="flex text-yellow-500">
-              <i className="fas fa-star"></i>
-              <i className="fas fa-star"></i>
-              <i className="fas fa-star"></i>
-              <i className="fas fa-star-half-alt"></i>
-              <i className="far fa-star"></i>
+              {[...Array(5)].map((_, i) => {
+                if (i < Math.floor(rat)) {
+                  return <i key={i} className="fas fa-star"></i>; // Full star
+                } else if (i === Math.floor(rat) && rat % 1 !== 0) {
+                  return <i key={i} className="fas fa-star-half-alt"></i>; // Half star
+                } else {
+                  return <i key={i} className="far fa-star"></i>; // Empty star
+                }
+              })}
             </div>
-            <span className="ml-2 text-gray-600">3.5</span>
-            <span className="ml-2 text-gray-600">(120 comment)</span>
+
+            <span className="ml-2 text-gray-600"> {rat}</span>
+            <span className="ml-2 text-gray-600">
+              {rating[0]?.totalReviews} Reviews
+            </span>
           </div>
           <div className="mb-4">
             <h2 className="text-lg font-semibold mb-2">Select Size</h2>
@@ -222,9 +293,8 @@ const ProductDetails = () => {
             </div>
           </div>
           <h1 className={`font-bold text-xl ${stockColors[stockMessageColor]}`}>
-  {stockMessage}
-</h1>
-
+            {stockMessage}
+          </h1>
 
           <div className="flex flex-col space-y-2">
             <div className="flex items-center">
@@ -345,7 +415,7 @@ const ProductDetails = () => {
                 className="mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
                 onClick={() => {
                   userInfo
-                    ? handleAddReview
+                    ? handleAddReview()
                     : alert("Please login to add review");
                 }}
               >

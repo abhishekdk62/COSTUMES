@@ -1,6 +1,6 @@
 const express = require('express');
 // Added googleAuth from userController
-const { signup, sendOTP,searchCategoriesToFilter, verifyOTP,getNewArrivals,categoryWiseProducs, resetPassword, searchProducts, getSimilarProducts, filteredProducts, getReview, addReview } = require('../controllers/userController');
+const { signup,getCategoryName, sendOTP,searchCategoriesToFilter,getRating, getRatings,verifyOTP,getNewArrivals,categoryWiseProducs, resetPassword, searchProducts, getSimilarProducts, filteredProducts, getReview, addReview } = require('../controllers/userController');
 const router = express.Router();
 
 router.post("/signup", signup);
@@ -15,6 +15,9 @@ router.post("/getsimilarproducts", getSimilarProducts);
 router.get("/products", searchProducts);
 router.post("/products",filteredProducts)
 router.post("/review",addReview)
+router.post("/getcategoryname",getCategoryName)
+router.get("/ratings",getRatings)
+router.post("/rating",getRating)
 router.post("/reviews",getReview)
 // router.post("/google-auth", googleAuth); // New route for Google auth via token
 

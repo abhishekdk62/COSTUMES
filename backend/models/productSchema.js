@@ -10,12 +10,14 @@ const productSchema = new mongoose.Schema(
     discount_percentage: { type: Number },
     stock: { type: Number, required: true },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
+    subCategory: { type: String }, // New field to store the subcategory as a string
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     color: { type: String },
-    isDeleted:{type:Boolean,default:false},
+    isDeleted: { type: Boolean, default: false },
     size: { type: String },
   },
   { timestamps: true } // Automatically adds createdAt & updatedAt
 );
 
-module.exports= mongoose.model("Product", productSchema);
+module.exports = mongoose.model("Product", productSchema);
+ 

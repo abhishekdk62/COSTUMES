@@ -3,35 +3,57 @@ import React, { useState, useEffect } from "react";
 const banners = [
   {
     id: 1,
-    image: "https://img.freepik.com/premium-vector/raksha-bandhan-sale-illustration-greeting-card-template-greetingposter-design_1169097-129.jpg?w=1380",
+    image: "/images/Home/banner-6.jpg",
+    alt: "Premium Suits",
+    textColor: "text-white",
+    title: "Premium Suits",
+    description: "Elegance Redefined",
+    bg: "bg-black/30",
+    obj: "object-contain",
+    font: "'EB Garamond', serif",
+    objectPosition: "center 10%", // Add this new key for inline styles
+    size: "text-7xl",
+  },
+  {
+    id: 4,
+    image:
+      "/images/Home/banner-lehanga.jpg",
     alt: "Women Clothing Banner",
     textColor: "text-white",
-    title: "Limited Offers",
-    description: "Up to 80% off on latest traditionals",
+    title: "",
+    description: "",
+    bg: "",
+    obj: "object-cover ",
+    objectPosition: "center 10%", // Add this new key for inline styles
+
+    font: "'EB Garamond', serif",
+    size: "text-5xl",
   },
   {
     id: 2,
-    image: "https://img.freepik.com/free-photo/portrait-handsome-confident-stylish-hipster-lambersexual-model-sexy-modern-man-dressed-elegant-black-suit-fashion-male-posing-studio-near-blue-wall_158538-24609.jpg?t=st=1740816481~exp=1740820081~hmac=ae20062019386e91507d143917e6d2627d6e84838c514aed75d77d76bcce7712&w=1380",
-    alt: "Men Suits Banner",
+    image: "/images/Home/banner-2.avif",
+    alt: "BREEZY SUMMER",
     textColor: "text-white",
-    title: "Men Suits",
-    description: "Exclusive collection of men suits",
+    title: "BREEZY SUMMER STYLE",
+    description: "Mens collection",
+    bg: "bg-black/40",
+    obj: "object-cover",
+    objectPosition: "center top", // Moves image to show more of the top
+    font: "'Cambay', sans-serif",
+    size: "text-5xl",
   },
   {
     id: 3,
-    image: "https://images.pexels.com/photos/30063065/pexels-photo-30063065/free-photo-of-adorable-child-in-traditional-indian-attire-indoors.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    image: "/images/Home/banner-3.jpg",
     alt: "Kids Wear Banner",
     textColor: "text-white",
     title: "Kids Wear",
     description: "Trendy and comfortable kids wear",
-  },
-  {
-    id: 4,
-    image: "https://img.freepik.com/free-photo/attractive-smiling-asian-woman-holding-shopping-bags-wearing-sunglasses-cute-dress-standing-agai_1258-153611.jpg?t=st=1740816386~exp=1740819986~hmac=6244619e1662702e966d50bd2b217b788584a062214746a4cf434328225de881&w=1380",
-    alt: "Women Clothing Banner",
-    textColor: "text-white",
-    title: "Women Clothing",
-    description: "Up to 70% off on latest trends",
+    bg: "bg-black/20",
+    objectPosition: "center 10%", // Add this new key for inline styles
+    obj: "object-cover ",
+    font: "'Cambay', sans-serif",
+    size: "text-5xl",
   },
 ];
 
@@ -57,33 +79,49 @@ const Banner = () => {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => nextSlide("right"), 3000);
+    const interval = setInterval(() => nextSlide("right"), 5000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="relative w-full h-60 overflow-hidden">
+    <div className="relative w-full h-120 overflow-hidden">
       <div
         className={`w-full h-full flex transition-transform duration-500 ease-in-out`}
         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
       >
         {banners.map((banner, index) => (
-          <div key={index} className="w-full flex-shrink-0 relative">
-            <img
-              src={banner.image}
-              alt={banner.alt}
-              className="w-full h-full object-cover object-[center_20%]"
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-              <h1 className={`text-5xl font-bold ${banner.textColor}`}>
-                {banner.title}
-              </h1>
-              <p className={`text-sm ${banner.textColor}`}>
-                {banner.description}
-              </p>
-            </div>
-          </div>
-        ))}
+  <div 
+    key={index}
+    className="group cursor-pointer w-full flex justify-center items-center flex-shrink-0 relative"
+    style={{
+      backgroundImage: `url(${banner.image})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    <img
+      src={banner.image}
+      alt={banner.alt}
+      className={`w-full h-full ${banner.obj} transition duration-300 ease-in-out group-hover:brightness-75`}
+      style={{ objectPosition: banner.objectPosition }}
+    />
+
+    <div
+      className={`absolute inset-0 flex flex-col items-center justify-center ${banner.bg}`}
+    >
+      <p
+        style={{ fontFamily: `${banner.font}` }}
+        className={`${banner.size} font-bold ${banner.textColor}`}
+      >
+        {banner.title}
+      </p>
+      <p className={`text-sm ${banner.textColor}`}>
+        {banner.description}
+      </p>
+    </div>
+  </div>
+))}
+
       </div>
 
       {/* Navigation Buttons */}

@@ -9,6 +9,7 @@ const CategorySchema = new mongoose.Schema(
     isDeleted: { type: Boolean, default: false }, // Soft delete field
     discount: { type: Number, default: 0 }, // Discount percentage or fixed amount
     productsCount: { type: Number, default: 0 }, // Number of products in this category
+    subCategories: { type: [String], default: [] },
   },
   { timestamps: true }
 ); // Automatically manages createdAt & updatedAt

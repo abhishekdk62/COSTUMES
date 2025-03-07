@@ -8,29 +8,29 @@ const Brands = () => {
         Up To <span className="text-yellow-400 font-bold">60%</span> off on brands
       </p>
       <div className="flex justify-center space-x-4">
-        <div className="bg-white p-4 rounded-lg">
+        <div className="bg-white cursor-pointer p-4 rounded-lg">
           <img
             src="https://logos-world.net/wp-content/uploads/2020/04/Nike-Logo.png"
             alt="Nike logo"
             className="h-12 w-24 object-contain"
           />
         </div>
-        <div className="bg-white p-4 rounded-lg"> <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/H%26M-Logo.svg" alt="H&M logo" className="h-12 w-24 object-contain" /> </div>
-        <div className="bg-white p-4 rounded-lg">
+        <div className="bg-white p-4 cursor-pointer rounded-lg"> <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/H%26M-Logo.svg" alt="H&M logo" className="h-12 w-24 object-contain" /> </div>
+        <div className="bg-white p-4 cursor-pointer rounded-lg">
           <img
             src="https://www.svgrepo.com/show/303398/levis-logo.svg"
             alt="Levi's logo"
             className="h-12 w-24 object-cover"
           />
         </div>
-        <div className="bg-white p-4 rounded-lg">
+        <div className="bg-white p-4 cursor-pointer rounded-lg">
           <img
             src="https://assets.simon.com/tenantlogos/16392.png"
             alt="U.S. Polo Assn. logo"
             className="h-12 w-24 object-cover"
           />
         </div>
-        <div className="bg-white p-4 rounded-lg">
+        <div className="bg-white p-4 cursor-pointer rounded-lg">
           <img
             src="https://upload.wikimedia.org/wikipedia/en/d/da/Puma_complete_logo.svg"
             alt="Puma logo"

@@ -8,6 +8,7 @@ const Product = require("../models/productSchema");
 const Category = require("../models/categorySchema");
 const Review = require("../models/reviewSchema");
 const { log } = require("console");
+const { default: mongoose } = require("mongoose");
 
 const signup = async (req, res) => {
   try {
@@ -27,6 +28,27 @@ const signup = async (req, res) => {
     res.status(201).json({ message: "User created successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+const getCategoryName = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: "ID is required" }); // Prevents searching with undefined/null
+    }
+
+
+    const cat = await Category.findById(id);
+
+    if (!cat) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    res.status(200).json(cat);
+  } catch (error) {
+    console.error("Error fetching category:", error); // Logs error for debugging
+    res.status(500).json({ error: "Server Error", details: error.message });
   }
 };
 
@@ -134,10 +156,15 @@ const categoryWiseProducs = async (req, res) => {
     const category = await Category.findOne({ name: regex });
 
     if (!category) {
-      return res.status(400).json({ message: `${catName} Category Not found from backend` });
+      return res
+        .status(400)
+        .json({ message: `${catName} Category Not found from backend` });
     }
 
-    const prods = await Product.find({ category: category._id })
+    const prods = await Product.find({
+      category: category._id,
+      isDeleted: false,
+    })
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -177,7 +204,8 @@ const getSimilarProducts = async (req, res) => {
 
 const filteredProducts = async (req, res) => {
   try {
-    const { searchTerm, category, minPrice, maxPrice, sortBy, page, limit } = req.body;
+    const { searchTerm, category, minPrice, maxPrice, sortBy, page, limit } =
+      req.body;
 
     // Set default pagination values if not provided
     const currentPage = parseInt(page) || 1;
@@ -207,7 +235,7 @@ const filteredProducts = async (req, res) => {
     const totalPages = Math.ceil(total / perPage);
 
     // Retrieve paginated products
-    const products = await Product.find(query)
+    const products = await Product.find({ ...query, isDeleted: false })
       .sort(sortOptions)
       .skip((currentPage - 1) * perPage)
       .limit(perPage);
@@ -223,7 +251,6 @@ const filteredProducts = async (req, res) => {
     res.status(500).json({ error: "Server error", message: error.message });
   }
 };
-
 
 const searchProducts = async (req, res) => {
   try {
@@ -314,19 +341,61 @@ const searchCategoriesToFilter = async (req, res) => {
     console.error("Error in searchCategories:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
-}
+};
+const getRatings = async (req, res) => {
+  try {
+    const ratings = await Review.aggregate([
+      {
+        $group: {
+          _id: "$productId",
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.json(ratings);
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+const getRating = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    const rating = await Review.aggregate([
+      {
+        $match: { productId: new mongoose.Types.ObjectId(id) }, // Convert to ObjectId
+      },
+      {
+        $group: {
+          _id: "$productId",
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+        },
+      },
+    ]);
+
+    res.status(200).json(rating);
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 module.exports = {
   getSimilarProducts,
   signup,
+  getRatings,
   filteredProducts,
   sendOTP,
   verifyOTP,
+  getRating,
   addReview,
   getReview,
   searchCategoriesToFilter,
   getNewArrivals,
   searchProducts,
   resetPassword,
+  getCategoryName,
   categoryWiseProducs,
 };

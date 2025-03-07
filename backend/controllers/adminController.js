@@ -1,6 +1,7 @@
 const User = require("../models/userSchema");
 const Category = require("../models/categorySchema");
 const Product = require("../models/productSchema");
+const { default: mongoose } = require("mongoose");
 
 const searchUsers = async (req, res) => {
   try {
@@ -9,7 +10,7 @@ const searchUsers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
 
     const filter = {
-      firstname: { $regex: searchQuery, $options: "i" }
+      firstname: { $regex: searchQuery, $options: "i" },
     };
 
     // Count total matching users
@@ -36,7 +37,8 @@ const searchUsers = async (req, res) => {
 
 const addCategorys = async (req, res) => {
   try {
-    const { categoryName, description, discount, thumbnail } = req.body;
+    const { categoryName, description, discount, thumbnail, subCategories } =
+      req.body;
 
     // Validate required fields
     if (!categoryName || !description || !discount || !thumbnail) {
@@ -57,6 +59,7 @@ const addCategorys = async (req, res) => {
       description,
       discount,
       thumbnail,
+      subCategories,
     });
 
     await newCategory.save(); // Ensure saving completes before responding
@@ -153,6 +156,7 @@ const editCategories = async (req, res) => {
       name,
       description,
       thumbnail,
+      subCategories,
       isActive,
       discount,
       productsCount,
@@ -166,6 +170,7 @@ const editCategories = async (req, res) => {
 
     // Update the category fields
     category.name = name;
+    category.subCategories = subCategories;
     category.description = description;
     category.thumbnail = thumbnail;
     category.isActive = isActive;
@@ -232,6 +237,7 @@ const addProduct = async (req, res) => {
       description,
       brand,
       productImages,
+      subCategory,
       base_price,
       discount_price,
       discount_percentage,
@@ -247,6 +253,7 @@ const addProduct = async (req, res) => {
       brand,
       productImages,
       base_price,
+      subCategory,
       discount_price,
       category,
       discount_percentage,
@@ -260,7 +267,7 @@ const addProduct = async (req, res) => {
       .status(201)
       .json({ message: "Product added successfully", product: savedProduct });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error", error });
+    res.status(500).json(error);
   }
 };
 
@@ -297,8 +304,6 @@ const searchProducts = async (req, res) => {
   }
 };
 
-
-
 const searchDeletedProducts = async (req, res) => {
   try {
     const searchQuery = req.query.q || "";
@@ -321,7 +326,8 @@ const getProduct = async (req, res) => {
     if (!id) {
       return res.status(400).json({ message: "Product id not available" });
     }
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).populate("category");
+
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
@@ -364,7 +370,9 @@ const editProduct = async (req, res) => {
     const {
       name,
       description,
+      subCategory,
       brand,
+      category,
       productImages,
       base_price,
       discount_price,
@@ -385,7 +393,9 @@ const editProduct = async (req, res) => {
     product.name = name;
     product.description = description;
     product.brand = brand;
+    product.subCategory = subCategory;
     product.productImages = productImages;
+    product.category = category;
     product.base_price = base_price;
     product.discount_price = discount_price;
     product.discount_percentage = discount_percentage;
@@ -423,19 +433,18 @@ const restoreProduct = async (req, res) => {
 const restoreCategory = async (req, res) => {
   try {
     const { id } = req.body;
-    
-    if(!id)
-    {
-      return res.status(400).json({message:"category id not available"})
+
+    if (!id) {
+      return res.status(400).json({ message: "category id not available" });
     }
     const category = await Category.findByIdAndUpdate(
       id,
       { isDeleted: false },
       { new: true }
     );
-    res.status(200).json({message:"Category updated from backend"});
+    res.status(200).json({ message: "Category updated from backend" });
   } catch (error) {
-    res.status(500).json({"error is":error});
+    res.status(500).json({ "error is": error });
   }
 };
 

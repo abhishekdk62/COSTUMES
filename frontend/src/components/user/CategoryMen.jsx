@@ -54,14 +54,20 @@ const CategoryMen = () => {
         <Slider {...sliderSettings}>
           {mens.length > 0 ? (
             mens.map((product) => (
-              <div onClick={()=>handleProductView(product)} key={product._id} className="p-2">
-                <img
-                  src={product.productImages?.[0]} // Optional chaining to avoid errors
-                  alt={product.name}
-                  className="w-[137px] h-[205px] object-cover rounded-lg"
-                />
-                <p className="mt-2 text-center">{product.name}</p>
+              <div
+              onClick={() => handleProductView(product)}
+              key={product._id}
+              className=" p-2"
+            >
+              <div className="flex items-center justify-center">
+              <img
+                src={product.productImages?.[0]} // Optional chaining to avoid errors
+                alt={product.name}
+                className="w-[137px] h-[205px] object-cover rounded-lg"
+              />
               </div>
+              <p className="mt-2 text-center">{product.name}</p>
+            </div>
             ))
           ) : (
             <p>No products available</p>

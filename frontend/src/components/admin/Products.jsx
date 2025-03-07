@@ -1,19 +1,13 @@
-import React, { useEffect, useState } from "react";
-import {
-  X,
-  Search,
-  Edit,
-  Trash2,
-  CheckCircle,
-  LocateFixed,
-} from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { X, Search, Edit, Trash2, CheckCircle } from "lucide-react";
 import axios from "axios";
+import Cropper from "react-easy-crop";
 
 const AddProduct = ({ setShowAddProduct }) => {
   const [name, setName] = useState("Mens Formals");
   const [description, setDescription] = useState("");
   const [brand, setBrand] = useState("");
-  const [productImages, setProductImages] = useState(["", "", ""]);
+  const [productImages, setProductImages] = useState([""]); // Start with one input field
   const [basePrice, setBasePrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [discountPercentage, setDiscountPercentage] = useState("");
@@ -24,6 +18,7 @@ const AddProduct = ({ setShowAddProduct }) => {
   const [owner, setOwner] = useState("");
   const [color, setColor] = useState("");
   const [size, setSize] = useState("");
+  const [subCategory, setSubCategory] = useState(""); // stores selected subcategory
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -32,7 +27,7 @@ const AddProduct = ({ setShowAddProduct }) => {
         const response = await axios.get(
           "http://localhost:5000/admin/searchcategories?q="
         );
-        setCategories(response.data);
+        setCategories(response.data.categories);
       } catch (error) {
         console.error("Error fetching categories:", error);
       }
@@ -40,14 +35,31 @@ const AddProduct = ({ setShowAddProduct }) => {
     fetchCategories();
   }, []);
 
-  // Function to handle file upload to Cloudinary for a specific image index
-  const handleImageUpload = async (index, event) => {
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(null);
+  const [tempImageSrc, setTempImageSrc] = useState(null);
+  const [cat, setCat] = useState("");
+
+  const openFileDialog = (index) => {
+    document.getElementById(`fileInput${index}`).click();
+  };
+
+  const handleFileChange = (index, event) => {
     const file = event.target.files[0];
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTempImageSrc(reader.result);
+      setCurrentImageIndex(index);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
 
+  const handleCrop = async (croppedBlob) => {
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "COSTUMES"); // Use your upload preset
+    formData.append("file", croppedBlob, "cropped.jpg");
+    formData.append("upload_preset", "COSTUMES");
 
     try {
       const res = await fetch(
@@ -58,13 +70,30 @@ const AddProduct = ({ setShowAddProduct }) => {
         }
       );
       const data = await res.json();
-      // Update the productImages array for the specific index
-      const newProductImages = [...productImages];
-      newProductImages[index] = data.secure_url;
-      setProductImages(newProductImages);
+      const newImages = [...productImages];
+      newImages[currentImageIndex] = data.secure_url;
+      setProductImages(newImages);
     } catch (error) {
       console.error("Error uploading image:", error);
+    } finally {
+      setCropModalOpen(false);
+      setTempImageSrc(null);
+      setCurrentImageIndex(null);
     }
+  };
+
+  // Remove an image when the X button is clicked
+  const removeImage = (index) => {
+    setProductImages((prevImages) => {
+      const newImages = [...prevImages];
+      newImages.splice(index, 1); // Remove the image from the array
+      return newImages;
+    });
+  };
+
+  // Add a new image field (for multiple uploads)
+  const addImageField = () => {
+    setProductImages([...productImages, ""]);
   };
 
   const handleSubmit = async (e) => {
@@ -80,6 +109,7 @@ const AddProduct = ({ setShowAddProduct }) => {
           base_price: basePrice,
           discount_price: discountPrice,
           discount_percentage: discountPercentage,
+          subCategory,
           stock,
           category,
           color,
@@ -91,7 +121,7 @@ const AddProduct = ({ setShowAddProduct }) => {
       setName("");
       setDescription("");
       setBrand("");
-      setProductImages(["", "", ""]);
+      setProductImages([""]);
       setBasePrice("");
       setDiscountPrice("");
       setDiscountPercentage("");
@@ -104,6 +134,8 @@ const AddProduct = ({ setShowAddProduct }) => {
       alert(error.response.data.message);
     }
   };
+
+  const selectedCategory = categories.find((cat) => cat._id === category);
 
   return (
     <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
@@ -151,48 +183,67 @@ const AddProduct = ({ setShowAddProduct }) => {
           </label>
           <div className="flex space-x-4">
             {productImages.map((img, index) => (
-              <div
-                key={index}
-                className="w-1/3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center p-4"
-              >
-                <div className="text-center">
-                  {img ? (
+              <div key={index} className="relative text-center">
+                {img ? (
+                  <>
                     <img
                       src={img}
                       alt={`Uploaded ${index}`}
                       className="mx-auto mb-2"
+                      height="400"
+                      width="309"
+                    />
+                    {/* X button to remove the image */}
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute cursor-pointer top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                    >
+                      X
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <img
+                      alt="Placeholder"
+                      className="mx-auto mb-2"
                       height="100"
+                      src="https://placehold.co/100x100"
                       width="100"
                     />
-                  ) : (
-                    <>
-                      <img
-                        alt="Placeholder"
-                        className="mx-auto mb-2"
-                        height="100"
-                        src="https://placehold.co/100x100"
-                        width="100"
-                      />
-                      {/* Hidden file input for image upload */}
-                      <input
-                        id={`fileInput${index}`}
-                        type="file"
-                        accept="image/*"
-                        style={{ display: "none" }}
-                        onChange={(e) => handleImageUpload(index, e)}
-                      />
-                      <label
-                        htmlFor={`fileInput${index}`}
-                        className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-pointer"
-                      >
-                        Add Image
-                      </label>
-                    </>
-                  )}
-                </div>
+                    <input
+                      id={`fileInput${index}`}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={(e) => handleFileChange(index, e)}
+                    />
+                    <label
+                      onClick={() => openFileDialog(index)}
+                      className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-pointer"
+                    >
+                      Add Image
+                    </label>
+                  </>
+                )}
               </div>
             ))}
+            {cropModalOpen && tempImageSrc && (
+              <CropModal
+                imageSrc={tempImageSrc}
+                onCrop={handleCrop}
+                onClose={() => setCropModalOpen(false)}
+                aspect={309 / 400}
+              />
+            )}
           </div>
+          <button
+            type="button" // Avoid form submission
+            onClick={addImageField}
+            className="bg-blue-500 cursor-pointer text-white mx-auto my-3 px-4 py-2 rounded-lg"
+          >
+            + Add Another Image
+          </button>
         </div>
         {/* Pricing, Stock, and Category */}
         <div className="grid grid-cols-2 gap-4 mb-4">
@@ -239,6 +290,7 @@ const AddProduct = ({ setShowAddProduct }) => {
             />
           </div>
           {/* Category Dropdown */}
+
           <div>
             <label className="block text-gray-700 font-bold mb-2">
               Category
@@ -246,7 +298,10 @@ const AddProduct = ({ setShowAddProduct }) => {
             <select
               className="w-full px-3 py-2 border rounded-lg"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setSubCategory("");
+              }}
             >
               <option value="">Select Category</option>
               {categories.map((cat) => (
@@ -256,6 +311,25 @@ const AddProduct = ({ setShowAddProduct }) => {
               ))}
             </select>
           </div>
+          <div className="mt-4">
+            <label className="block text-gray-700 font-bold mb-2">
+              Subcategory
+            </label>
+            <select
+              className="w-full px-3 py-2 border rounded-lg"
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
+            >
+              <option value="">Select Subcategory</option>
+              {selectedCategory &&
+                selectedCategory.subCategories.map((subCat, index) => (
+                  <option key={index} value={subCat}>
+                    {subCat}
+                  </option>
+                ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-gray-700 font-bold mb-2">Owner</label>
             <input
@@ -274,7 +348,6 @@ const AddProduct = ({ setShowAddProduct }) => {
               onChange={(e) => setColor(e.target.value)}
             />
           </div>
-
           <div>
             <label className="block text-gray-700 font-bold mb-2">Size</label>
             <input
@@ -302,6 +375,107 @@ const AddProduct = ({ setShowAddProduct }) => {
           </button>
         </div>
       </form>
+    </div>
+  );
+};
+
+//!croping comppo
+const getCroppedImg = (imageSrc, croppedAreaPixels) =>
+  new Promise((resolve, reject) => {
+    const image = new Image();
+    image.src = imageSrc;
+    image.onload = () => {
+      const outputWidth = 309;
+      const outputHeight = 400;
+      const canvas = document.createElement("canvas");
+      canvas.width = outputWidth;
+      canvas.height = outputHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        outputWidth,
+        outputHeight
+      );
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error("Canvas is empty"));
+        resolve(blob);
+      }, "image/jpeg");
+    };
+    image.onerror = () => reject(new Error("Image load failed"));
+  });
+
+// Crop Modal Component
+const CropModal = ({ imageSrc, onCrop, onClose, aspect = 1 }) => {
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+
+  const onCropComplete = useCallback((_, croppedPixels) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
+  const handleCrop = async () => {
+    try {
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      onCrop(croppedBlob);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-4">
+        {/* Container with fixed size */}
+        <div className="relative w-[309px] h-[400px]">
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            aspect={aspect}
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onCropComplete={onCropComplete}
+            cropShape="rect"
+            showGrid={false}
+            style={{
+              containerStyle: {
+                width: "309px",
+
+                height: "400px",
+              },
+              cropAreaStyle: {
+                border: "2px dashed #fff",
+                background: "rgba(0, 0, 0, 0.5)",
+                width: "309px",
+                height: "400px",
+              },
+            }}
+          />
+        </div>
+        <div className="mt-2 flex justify-end space-x-2">
+          <button
+            type="button"
+            onClick={handleCrop}
+            className="bg-blue-500 text-white px-4 py-2"
+          >
+            Crop
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="bg-gray-300 px-4 py-2"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -370,6 +544,9 @@ const ProductsList = ({
       }
     }
   };
+  useEffect(() => {
+    fetchProducts(searchInput.trim(), currentPage);
+  }, [currentPage]);
 
   return (
     // Added pb-20 to ensure content doesn't get hidden behind the fixed pagination
@@ -506,32 +683,60 @@ const ProductsList = ({
       </div>
 
       {/* Fixed Pagination UI at Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow">
-        <div className="flex justify-center items-center space-x-4">
+      <div className="fixed bottom-0 left-0 right-0 p-2 bg-background bg-gray-100 shadow-sm border-t border-border">
+        <div className="flex justify-center items-center space-x-1 max-w-xs mx-auto">
           <button
             onClick={() => {
               if (currentPage > 1) {
-                fetchProducts(searchInput, currentPage - 1);
+                fetchProducts(searchInput.trim(), currentPage - 1);
               }
             }}
             disabled={currentPage <= 1}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+            aria-label="Previous page"
           >
-            Previous
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
           </button>
-          <span>
+
+          <span className="text-sm font-medium">
             Page {currentPage} of {totalPages}
           </span>
+
           <button
             onClick={() => {
               if (currentPage < totalPages) {
-                fetchProducts(searchInput, currentPage + 1);
+                setCurrentPage(currentPage + 1);
               }
             }}
             disabled={currentPage >= totalPages}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+            aria-label="Next page"
           >
-            Next
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -557,6 +762,8 @@ const EditProduct = ({ setShowEditProduct }) => {
   const [owner, setOwner] = useState("");
   const [color, setColor] = useState("");
   const [size, setSize] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [subCategory, setSubCategory] = useState("");
 
   // Fetch product details on mount
   useEffect(() => {
@@ -572,6 +779,19 @@ const EditProduct = ({ setShowEditProduct }) => {
       }
     };
     fetchProduct();
+  }, []);
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/admin/searchcategories?q="
+        );
+        setCategories(response.data.categories);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
   }, []);
 
   // Initialize state after fetching productDetails
@@ -630,10 +850,11 @@ const EditProduct = ({ setShowEditProduct }) => {
           brand,
           productImages,
           base_price: basePrice,
+          subCategory,  
           discount_price: discountPrice,
           discount_percentage: discountPercentage,
           stock,
-          category,
+          category: category,
           owner,
           color,
           size,
@@ -776,17 +997,43 @@ const EditProduct = ({ setShowEditProduct }) => {
               onChange={(e) => setStock(e.target.value)}
             />
           </div>
+
           <div>
             <label className="block text-gray-700 font-bold mb-2">
               Category
             </label>
-            <input
+            <select
               className="w-full px-3 py-2 border rounded-lg"
-              type="text"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            />
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setSubCategory("");
+              }}
+            >
+              <option value="">Select Category</option>
+              {categories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
+         <div>
+  <label className="block text-gray-700 font-bold mb-2">Subcategory</label>
+  <select
+    className="w-full px-3 py-2 border rounded-lg"
+    value={subCategory}
+    onChange={(e) => setSubCategory(e.target.value)}
+  >
+    <option value="">Select Subcategory</option>
+    {categories.find(cat => cat._id === category)?.subCategories.map((subCat, index) => (
+      <option key={index} value={subCat}>
+        {subCat}
+      </option>
+    ))}
+  </select>
+</div>
+
           <div>
             <label className="block text-gray-700 font-bold mb-2">Owner</label>
             <input
@@ -890,18 +1137,6 @@ const RemovedProducts = ({ setShowRemoved }) => {
                 placeholder="Search products"
                 className="w-full p-2 pr-10 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-600"
               />
-
-              {/* {searchInput && (
-                <button
-                  onClick={() => {
-                    setSearchInput("");
-                    fetchProducts("");
-                  }}
-                  className="cursor-pointer absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                >
-                  <X size={25} />
-                </button>
-              )} */}
             </div>
             {/* Search Button */}
             <button className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center space-x-2">

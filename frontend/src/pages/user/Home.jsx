@@ -41,15 +41,17 @@ const Home = () => {
       <Banner />
 
       <div className="px-6 md:px-12 lg:px-20 space-y-12">
-        <NewArivals />
-        <Promotions />
-        <CategoryMen />
-        <Brands />
+      <Saving />
         <CategoryWomen />
-        <Saving />
+        <Promotions />
+      <NewArivals />
+        <Brands />
         <Trending />
-      </div>
+
+
+        <CategoryMen />
       <Footer />
+      </div>
     </div>
   );
 };

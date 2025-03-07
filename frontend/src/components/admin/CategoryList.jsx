@@ -23,7 +23,7 @@ const CategoryCard = ({
       if (response.status == 200) {
         alert("Category restored");
       }
-      fetchCategories()
+      fetchCategories();
     } catch (error) {
       console.log(error);
     }
@@ -97,12 +97,16 @@ const CategoryCardShimmer = () => {
 };
 
 //!  Category List
-const CategoryList = ({ setShowAddCategory, setEditCategory, setShowRemovedCategory }) => {
+const CategoryList = ({
+  setShowAddCategory,
+  setEditCategory,
+  setShowRemovedCategory,
+}) => {
   const [searchInput, setSearchInput] = useState("");
   const [categorieList, setCategoryList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -139,6 +143,9 @@ const CategoryList = ({ setShowAddCategory, setEditCategory, setShowRemovedCateg
       fetchCategories(searchInput, 1);
     }
   };
+  useEffect(() => {
+    fetchCategories(searchInput.trim(), currentPage);
+  }, [currentPage]);
 
   return (
     <div className="container mx-auto p-6">
@@ -216,36 +223,64 @@ const CategoryList = ({ setShowAddCategory, setEditCategory, setShowRemovedCateg
         </div>
 
         {/* Pagination Controls */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white shadow">
-  <div className="flex justify-center items-center space-x-4">
-          <button
-            onClick={() => {
-              if (currentPage > 1) {
-                fetchCategories(searchInput, currentPage - 1);
-              }
-            }}
-            disabled={currentPage <= 1}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => {
-              if (currentPage < totalPages) {
-                fetchCategories(searchInput, currentPage + 1);
-              }
-            }}
-            disabled={currentPage >= totalPages}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
+        <div className="fixed bottom-0 left-0 right-0 p-2 bg-background bg-gray-100 shadow-sm border-t border-border">
+          <div className="flex justify-center items-center space-x-1 max-w-xs mx-auto">
+            <button
+              onClick={() => {
+                if (currentPage > 1) {
+                  setCurrentPage(currentPage - 1);
+                }
+              }}
+              disabled={currentPage <= 1}
+              className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+              aria-label="Previous page"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+
+            <span className="text-sm font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <button
+              onClick={() => {
+                if (currentPage < totalPages) {
+                  setCurrentPage(currentPage + 1);
+                }
+              }}
+              disabled={currentPage >= totalPages}
+              className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+              aria-label="Next page"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };
@@ -258,6 +293,8 @@ const AddCategory = ({ setShowAddCategory }) => {
   const [visibilityStatus, setVisibilityStatus] = useState("Active");
   const [discount, setDiscount] = useState("10");
   const [thumbnail, setThumbnail] = useState("");
+  const [subCategories, setSubCategories] = useState([]);
+  const [subCategoryInput, setSubCategoryInput] = useState(""); // Holds input field value
 
   // Function to handle thumbnail upload to Cloudinary
   const handleThumbnailUpload = async (event) => {
@@ -282,6 +319,15 @@ const AddCategory = ({ setShowAddCategory }) => {
       console.error("Error uploading thumbnail:", error);
     }
   };
+  const handleAddSubCategory = () => {
+    if (
+      subCategoryInput.trim() !== "" &&
+      !subCategories.includes(subCategoryInput.trim())
+    ) {
+      setSubCategories([...subCategories, subCategoryInput.trim()]);
+      setSubCategoryInput(""); // Clear input field
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -291,17 +337,23 @@ const AddCategory = ({ setShowAddCategory }) => {
         {
           categoryName,
           description,
+          subCategories,
           discount,
           thumbnail, // sending the thumbnail URL to the backend
         }
       );
       alert("Category added successfully!");
       setCategoryName("");
+      setSubCategoryInput("");
       setDescription("");
       setThumbnail("");
     } catch (error) {
       alert(error.response.data.message);
     }
+  };
+  const handleRemoveSubCategory = (index) => {
+    const updatedSubCategories = subCategories.filter((_, i) => i !== index);
+    setSubCategories(updatedSubCategories);
   };
 
   return (
@@ -327,6 +379,46 @@ const AddCategory = ({ setShowAddCategory }) => {
                 value={categoryName}
                 onChange={(e) => setCategoryName(e.target.value)}
               />
+            </div>
+            <div className="mb-4">
+              <label
+                className="block text-gray-700 font-semibold mb-2"
+                htmlFor="category-name"
+              >
+                Sub Categories
+              </label>
+              <input
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                id="category-name"
+                type="text"
+                value={subCategoryInput}
+                onChange={(e) => setSubCategoryInput(e.target.value)}
+              />
+              <button
+                className="bg-blue-500 py-2 px-3 m-2 rounded-xl cursor-pointer font-bold text-white"
+                onClick={handleAddSubCategory}
+              >
+                Add
+              </button>
+            </div>
+            <div className="mt-2 flex flex-wrap">
+              <div className="mt-2 flex flex-wrap">
+                {subCategories.map((sub, index) => (
+                  <span
+                    key={index}
+                    className="bg-gray-200 px-3 py-1 m-1 rounded-md text-sm flex items-center"
+                  >
+                    {sub}
+                    <button
+                      type="button"
+                      className="ml-2 cursor-pointer text-gray-500 font-bold"
+                      onClick={() => handleRemoveSubCategory(index)}
+                    >
+                      ✖
+                    </button>
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* Include Products */}
@@ -492,6 +584,7 @@ const EditCategory = ({ setEditCategory }) => {
   const [visibilityStatus, setVisibilityStatus] = useState("Active");
   const [discount, setDiscount] = useState("10");
   const [thumbnail, setThumbnail] = useState("");
+  const [subCategories, setSubCategories] = useState([]);
 
   useEffect(() => {
     const getCategory = async () => {
@@ -504,9 +597,10 @@ const EditCategory = ({ setEditCategory }) => {
           `http://localhost:5000/admin/getcategory/${id}`
         );
         const category = response.data.data;
-        console.log(category);
         setCategoryName(category.name);
         setDescription(category.description);
+        setSubCategories(category?.subCategories);
+
         setThumbnail(category.thumbnail || ""); // Set thumbnail if exists
       } catch (error) {
         console.log(error.message);
@@ -548,6 +642,7 @@ const EditCategory = ({ setEditCategory }) => {
           id: categoryId,
           name: categoryName,
           description: description,
+          subCategories: subCategories,
           discount: discount,
           visibilityStatus: visibilityStatus,
           thumbnail: thumbnail, // Send the thumbnail URL to the backend
@@ -558,6 +653,15 @@ const EditCategory = ({ setEditCategory }) => {
       console.error(error.response?.data?.message || error.message);
     }
   };
+  const handleSubCatDelete = (ind) => {
+    const result = window.confirm("Do you want to remove this subcategory?");
+    if (result) {
+      console.log("deleted");
+      const filteredCategory = subCategories.filter((cat, id) => id != ind);
+      setSubCategories(filteredCategory);
+    }
+  };
+  const [newSubCategory, setNewSubCategory] = useState("");
 
   return (
     <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
@@ -583,24 +687,61 @@ const EditCategory = ({ setEditCategory }) => {
                 onChange={(e) => setCategoryName(e.target.value)}
               />
             </div>
+
             {/* Include Products (Static for now) */}
             <div className="mb-4">
               <label
                 className="block text-gray-700 font-semibold mb-2"
                 htmlFor="include-products"
               >
-                Include products
+                Subcategories
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-md flex flex-wrap gap-2">
-                <span className="bg-gray-200 px-2 py-1 rounded-full">
-                  Kids products <i className="fas fa-times ml-1"></i>
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full">
-                  Kids Style <i className="fas fa-times ml-1"></i>
-                </span>
-                <span className="bg-gray-200 px-2 py-1 rounded-full">
-                  Styling <i className="fas fa-times ml-1"></i>
-                </span>
+                {subCategories.map((subcat, ind) => (
+                  <div
+                    className="flex justify-center content-center text-center"
+                    key={ind}
+                  >
+                    <input
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      id="category-name"
+                      type="text"
+                      value={subcat}
+                      onChange={(e) => {
+                        const newSubCategories = [...subCategories];
+                        newSubCategories[ind] = e.target.value;
+                        setSubCategories(newSubCategories);
+                      }}
+                    />
+                    <i
+                      onClick={() => handleSubCatDelete(ind)}
+                      className="fas text-2xl cursor-pointer text-red-600 fa-times ml-1"
+                    ></i>
+                  </div>
+                ))}
+                <input
+                  type="text"
+                  placeholder="Enter new subcategory"
+                  value={newSubCategory}
+                  onChange={(e) => setNewSubCategory(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      newSubCategory.trim() &&
+                      !subCategories.includes(newSubCategory.trim)
+                    ) {
+                      setSubCategories([
+                        ...subCategories,
+                        newSubCategory.trim(),
+                      ]);
+                      setNewSubCategory(""); // Clear input after adding
+                    }
+                  }}
+                >
+                  Add
+                </button>
               </div>
             </div>
           </div>
@@ -809,9 +950,7 @@ const RemovedCategory = ({ setShowRemovedCategory, showRemovedCategory }) => {
     </div>
   );
 };
-
 //!  Category
-
 const Category = () => {
   const [showAddCategory, setShowAddCategory] = useState(
     localStorage.getItem("showAddCategory") === "true"

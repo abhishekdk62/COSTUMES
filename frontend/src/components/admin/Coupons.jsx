@@ -2,17 +2,13 @@ import React, { useState } from "react";
 import Header from "../common/Header";
 
 const Coupons = () => {
-  const [showAddCoupon, setShowAddCoupon] = useState(false);
 
   // Toggle the view to show the AddCoupon component
-  const handleNewCoupon = () => {
-    setShowAddCoupon(true);
-  };
+
 
   return (
     <div>
-      <Header />
-      {showAddCoupon ? <AddCoupon /> : <Coupon onNewCoupon={handleNewCoupon} />}
+     <Coupon />
     </div>
   );
 };

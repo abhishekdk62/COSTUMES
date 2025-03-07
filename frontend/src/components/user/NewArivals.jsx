@@ -9,13 +9,13 @@ import { useNavigate } from "react-router-dom";
 const NewArrivals = () => {
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate=useNavigate()
+  const navigate = useNavigate();
 
   const handleProductView = (product) => {
     localStorage.setItem("productInfo", JSON.stringify(product));
-    navigate("/product")
+    navigate("/product");
   };
-  useEffect(() => {
+  useEffect(() => { 
     const fetchNewArrivals = async () => {
       try {
         const response = await axios.get(
@@ -37,25 +37,33 @@ const NewArrivals = () => {
     dots: true,
     infinite: true,
     speed: 500,
-    slidesToShow: 6, // Adjust the number of slides to show as needed
+    slidesToShow: 5, // Adjust the number of slides as needed
     slidesToScroll: 1,
+    draggable: true, // Allows mouse dragging
+    swipeToSlide: true, // Lets the swipe gesture directly change slides
     responsive: [
       {
         breakpoint: 1024,
         settings: {
           slidesToShow: 3,
+          draggable: true,
+          swipeToSlide: true,
         },
       },
       {
         breakpoint: 600,
         settings: {
           slidesToShow: 2,
+          draggable: true,
+          swipeToSlide: true,
         },
       },
       {
         breakpoint: 480,
         settings: {
           slidesToShow: 1,
+          draggable: true,
+          swipeToSlide: true,
         },
       },
     ],
@@ -63,19 +71,44 @@ const NewArrivals = () => {
 
   return (
     <section className="container mx-auto px-4 py-8">
-      <h2 className="text-xl font-bold mb-4">New Arrivals</h2>
+      <div className="flex items-center justify-center my-4">
+        <div className="flex  mb-8 items-center w-full max-w-6xl">
+          <div className="flex-grow border-t-2 border-gray-300"></div>
+          <h1
+            style={{ fontFamily: "'Cambay', sans-serif" }}
+            className="text-2xl mx-6  text-gray-600  whitespace-nowrap"
+          >
+            New Arrivals
+          </h1>
+          <div className="flex-grow border-t-2 border-gray-300"></div>
+        </div>
+      </div>
+
       {loading ? (
         <CategorySlideShimmer />
       ) : (
         <Slider {...sliderSettings}>
           {newArrivals.map((product) => (
-            <div onClick={()=>handleProductView(product)} key={product._id} className="p-2">
-              <img
-                src={product.productImages[0]} // assuming the first image is the one to display
-                alt={product.name}
-                className="w-[137px] h-[205px] object-cover rounded-lg"
-              />
-              <p className="mt-2 text-center">{product.name}</p>
+            <div
+              onClick={() => handleProductView(product)}
+              key={product._id}
+              className="p-2 group cursor-pointer"
+            >
+              <div className="flex items-center justify-center">
+                <div className="w-100 h-100">
+                  <img
+                    src={product.productImages?.[0]}
+                    alt={product.name}
+                    className="w-full h-full object-cover  transition duration-300 ease-in-out group-hover:brightness-75"
+                  />
+                </div>
+              </div>
+              <p
+                style={{ fontFamily: "'Cambay', sans-serif" }}
+                className="mt-2 text-center text-gray-700 text-xl"
+              >
+                {product.name}
+              </p>
             </div>
           ))}
         </Slider>

@@ -1,85 +1,133 @@
 import React from "react";
 
 const Saving = () => {
+  const firstRowItems = [
+    {
+      heading: "Bridal",
+      offerText: "",
+      description: "Elegant Wedding Collection",
+      imgSrc: "/images/Home/featured-1.webp",
+      textcolor: "black",
+    },
+    {
+      heading: "Knitwear's",
+      offerText: "Essential wardrobe staples",
+      description: "",
+      imgSrc: "/images/Home/featured-5.jpg",
+      textcolor: "black",
+    },
+    {
+      heading: "L'Étoile",
+      offerText: "",
+      description: "fw 24",
+      imgSrc: "/images/Home/featured-3.webp",
+      textcolor: "white",
+    },
+  ];
+
+  const secondRowItems = [
+    {
+      heading: "Topman X Hartley",
+      offerText: "",
+      description: "Classic tailoring meets streetwear",
+      textcolor: "white",
+      imgSrc: "/images/Home/featured-4.webp",
+    },
+    {
+      heading: "Oversized T-Shirts",
+      offerText: "",
+      description: "Street Style Icon",
+      imgSrc: "/images/Home/featured-2.jpg",
+      textcolor: "black",
+    },
+  ];
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-4xl font-bold text-black mb-8">Big Saving Zone</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Hawaiian Shirts */}
-        <div className="bg-gray-200 rounded-lg p-4 relative">
-          <img
-            src="https://placehold.co/400x400"
-            alt="Man wearing a Hawaiian shirt with a blue background"
-            className="rounded-lg"
-          />
-          <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4">
-            <h2 className="text-2xl font-bold">Hawaiian Shirts</h2>
-            <p className="mt-2">Dress up in summer vibe</p>
-            <p className="mt-2 font-bold">UPTO 50% OFF</p>
-            <button className="mt-4 px-4 py-2 border border-white rounded-full">SHOP NOW</button>
-          </div>
-        </div>
-        {/* Printed T-Shirt */}
-        <div className="bg-gray-200 rounded-lg p-4 relative">
-          <img
-            src="https://placehold.co/400x400"
-            alt="Woman wearing a printed T-shirt with a pink background"
-            className="rounded-lg"
-          />
-          <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4">
-            <div className="bg-gray-800 text-white px-2 py-1 rounded-full mb-2">Limited Stock</div>
-            <h2 className="text-2xl font-bold">Printed T-Shirt</h2>
-            <p className="mt-2">New Designs Every Week</p>
-            <p className="mt-2 font-bold">UPTO 40% OFF</p>
-            <button className="mt-4 px-4 py-2 border border-white rounded-full">SHOP NOW</button>
-          </div>
-        </div>
-        {/* Cargo Joggers */}
-        <div className="bg-gray-200 rounded-lg p-4 relative">
-          <img
-            src="https://placehold.co/400x400"
-            alt="Woman wearing cargo joggers with a gray background"
-            className="rounded-lg"
-          />
-          <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 text-gray-800">
-            <h2 className="text-2xl font-bold">Cargo Joggers</h2>
-            <p className="mt-2">Move with style & comfort</p>
-            <p className="mt-2 font-bold">UPTO 50% OFF</p>
-            <button className="mt-4 px-4 py-2 border border-gray-800 rounded-full">SHOP NOW</button>
-          </div>
+      <div className="flex items-center justify-center my-4">
+        <div className="flex items-center w-full max-w-6xl">
+          <div className="flex-grow border-t-2 border-gray-300"></div>
+          <h1
+            style={{ fontFamily: "'Cambay', sans-serif" }}
+            className="text-2xl text-gray-600 mx-6 whitespace-nowrap"
+          >
+            Elegant Attires
+          </h1>
+          <div className="flex-grow border-t-2 border-gray-300"></div>
         </div>
       </div>
 
-      {/* Last Row - Two Full Width Boxes */}
+      {/* First row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 justify-items-center">
+        {firstRowItems.map((item, index) => (
+          <div
+            key={index}
+            className="group  rounded-lg p-4 w-full md:w-[400px] h-[600px] relative"
+          >
+            <img
+              src={item.imgSrc}
+              alt={item.heading}
+              className="rounded-lg w-full h-full object-cover transition duration-300 ease-in-out group-hover:brightness-75"
+            />
+            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4">
+              <h2
+                className={`text-5xl font-bold text-${item.textcolor}`}
+                style={{ fontFamily: "'EB Garamond', serif" }}
+              >
+                {item.heading}
+              </h2>
+              <p className={`text-lg text-${item.textcolor}`}>
+                {item.description}
+              </p>
+              <p className={`mt-2 font-bold text-${item.textcolor}`}>
+                {item.offerText}
+              </p>
+              <button
+                className={`mt-4 cursor-pointer px-4 py-2 border text-${item.textcolor} border-white rounded-full hover:bg-gray-500/20`}
+              >
+                SHOP NOW
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Second row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        {/* Urban Shirts */}
-        <div className="bg-gray-300 rounded-lg p-4 relative">
-          <img
-            src="https://placehold.co/400x400"
-            alt="Man wearing an urban shirt with a gray background"
-            className="rounded-lg"
-          />
-          <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 text-gray-800">
-            <h2 className="text-2xl font-bold">Urban Shirts</h2>
-            <p className="mt-2">Live In Comfort</p>
-            <p className="mt-2 font-bold">FLAT 60% OFF</p>
-            <button className="mt-4 px-4 py-2 border border-gray-800 rounded-full">SHOP NOW</button>
+        {secondRowItems.map((item, index) => (
+          <div
+            key={index}
+            className="group  rounded-lg flex justify-center relative"
+          >
+            {/* Fixed-height container so images appear uniform */}
+            <div className="w-full h-[600px]">
+              <img
+                src={item.imgSrc}
+                alt={item.heading}
+                className="rounded-lg w-full h-full object-cover transition duration-300 ease-in-out group-hover:brightness-75"
+              />
+            </div>
+            <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4">
+              <h2
+                className={`text-5xl font-bold text-${item.textcolor}`}
+                style={{ fontFamily: "'EB Garamond', serif" }}
+              >
+                {item.heading}
+              </h2>
+              <p className={`mt-2 text-${item.textcolor}`}>
+                {item.description}
+              </p>
+              <p className={`mt-2 font-bold text-${item.textcolor}`}>
+                {item.offerText}
+              </p>
+              <button
+                className={`mt-4 cursor-pointer px-4 py-2 border text-${item.textcolor} border-gray-800 rounded-full hover:bg-gray-500/20`}
+              >
+                SHOP NOW
+              </button>
+            </div>
           </div>
-        </div>
-        {/* Oversized T-Shirts */}
-        <div className="bg-gray-200 rounded-lg p-4 relative">
-          <img
-            src="https://placehold.co/400x400"
-            alt="Man wearing an oversized T-shirt with a blue background"
-            className="rounded-lg"
-          />
-          <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-4 text-gray-800">
-            <h2 className="text-2xl font-bold">Oversized T-Shirts</h2>
-            <p className="mt-2">Street Style Icon</p>
-            <p className="mt-2 font-bold">FLAT 60% OFF</p>
-            <button className="mt-4 px-4 py-2 border border-gray-800 rounded-full">SHOP NOW</button>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
