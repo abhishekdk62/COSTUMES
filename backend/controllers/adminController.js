@@ -236,40 +236,45 @@ const addProduct = async (req, res) => {
       name,
       description,
       brand,
-      productImages,
-      subCategory,
-      base_price,
-      discount_price,
-      discount_percentage,
       category,
-      stock,
-      color,
-      size,
+      subCategory,
+      owner,
+      variants, // variants: [{ color, size, stock, base_price, discount_price, discount_percentage }]
     } = req.body;
+
+    // Calculate discount_percentage for each variant
+    const updatedVariants = variants.map(variant => {
+      let discount_percentage = 0;
+      if (variant.base_price && variant.base_price !== 0 && variant.discount_price != null) {
+        discount_percentage = ((variant.base_price - variant.discount_price) / variant.base_price) * 100;
+      }
+      return { ...variant, discount_percentage };
+    });
 
     const newProduct = new Product({
       name,
       description,
       brand,
-      productImages,
-      base_price,
-      subCategory,
-      discount_price,
       category,
-      discount_percentage,
-      stock,
-      color,
-      size,
+      subCategory,
+      owner,
+      variants: updatedVariants,
     });
 
     const savedProduct = await newProduct.save();
-    res
-      .status(201)
-      .json({ message: "Product added successfully", product: savedProduct });
+    res.status(201).json({
+      message: "Product added successfully",
+      product: savedProduct,
+    });
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({
+      error
+    });
   }
 };
+
+
+
 
 const searchProducts = async (req, res) => {
   try {
@@ -372,16 +377,19 @@ const editProduct = async (req, res) => {
       description,
       subCategory,
       brand,
+      owner,
       category,
-      productImages,
-      base_price,
-      discount_price,
-      discount_percentage,
-      stock,
-      color,
-      quantity,
-      size,
+     variants
     } = req.body;
+
+    const updatedVariants = variants.map(variant => {
+      let discount_percentage = 0;
+      if (variant.base_price && variant.base_price !== 0 && variant.discount_price != null) {
+        discount_percentage = ((variant.base_price - variant.discount_price) / variant.base_price) * 100;
+      }
+      return { ...variant, discount_percentage };
+    });
+
 
     const product = await Product.findById(id);
 
@@ -393,16 +401,10 @@ const editProduct = async (req, res) => {
     product.name = name;
     product.description = description;
     product.brand = brand;
+    product.owner=owner;
     product.subCategory = subCategory;
-    product.productImages = productImages;
     product.category = category;
-    product.base_price = base_price;
-    product.discount_price = discount_price;
-    product.discount_percentage = discount_percentage;
-    product.stock = stock;
-    product.color = color;
-    product.quantity = quantity;
-    product.size = size;
+    product.variants= updatedVariants,
 
     await product.save(); // Ensure saving completes before responding
 
