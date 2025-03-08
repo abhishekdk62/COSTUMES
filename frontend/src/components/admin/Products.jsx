@@ -3,31 +3,44 @@ import { X, Search, Edit, Trash2, CheckCircle } from "lucide-react";
 import axios from "axios";
 import Cropper from "react-easy-crop";
 
+
+// Predefined options
+const colorOptions = ["Black", "Blue", "Red"];
+const sizeOptions = ["XL", "L", "SM", "M"];
+
+
+
 const AddProduct = ({ setShowAddProduct }) => {
+  // Main Product States
   const [name, setName] = useState("Mens Formals");
   const [description, setDescription] = useState("");
   const [brand, setBrand] = useState("");
-  const [productImages, setProductImages] = useState([""]); // Start with one input field
+  const [productImages, setProductImages] = useState([""]); // Main product images
   const [basePrice, setBasePrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [discountPercentage, setDiscountPercentage] = useState("");
   const [stock, setStock] = useState("");
-
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState([]);
+  const [subCategory, setSubCategory] = useState("");
   const [owner, setOwner] = useState("");
-  const [color, setColor] = useState("");
-  const [size, setSize] = useState("");
-  const [subCategory, setSubCategory] = useState(""); // stores selected subcategory
 
-  // Fetch categories on component mount
+  // Crop state for product images
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(null);
+  const [tempImageSrc, setTempImageSrc] = useState(null);
+
+  // Variant States
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSizes, setSelectedSizes] = useState([]); // Array of { size, stock, basePrice, discountPrice, discountPercentage }
+  const [variants, setVariants] = useState([]);
+
+  // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/admin/searchcategories?q="
-        );
-        setCategories(response.data.categories);
+        const res = await axios.get("http://localhost:5000/admin/searchcategories?q=");
+        setCategories(res.data.categories);
       } catch (error) {
         console.error("Error fetching categories:", error);
       }
@@ -35,11 +48,7 @@ const AddProduct = ({ setShowAddProduct }) => {
     fetchCategories();
   }, []);
 
-  const [cropModalOpen, setCropModalOpen] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(null);
-  const [tempImageSrc, setTempImageSrc] = useState(null);
-  const [cat, setCat] = useState("");
-
+  // ----- MAIN PRODUCT IMAGE HANDLERS -----
   const openFileDialog = (index) => {
     document.getElementById(`fileInput${index}`).click();
   };
@@ -60,15 +69,11 @@ const AddProduct = ({ setShowAddProduct }) => {
     const formData = new FormData();
     formData.append("file", croppedBlob, "cropped.jpg");
     formData.append("upload_preset", "COSTUMES");
-
     try {
-      const res = await fetch(
-        "https://api.cloudinary.com/v1_1/dv8xenucq/image/upload",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const res = await fetch("https://api.cloudinary.com/v1_1/dv8xenucq/image/upload", {
+        method: "POST",
+        body: formData,
+      });
       const data = await res.json();
       const newImages = [...productImages];
       newImages[currentImageIndex] = data.secure_url;
@@ -82,54 +87,77 @@ const AddProduct = ({ setShowAddProduct }) => {
     }
   };
 
-  // Remove an image when the X button is clicked
-  const removeImage = (index) => {
-    setProductImages((prevImages) => {
-      const newImages = [...prevImages];
-      newImages.splice(index, 1); // Remove the image from the array
+  const removeProductImage = (index) => {
+    setProductImages((prev) => {
+      const newImages = [...prev];
+      newImages.splice(index, 1);
       return newImages;
     });
   };
 
-  // Add a new image field (for multiple uploads)
-  const addImageField = () => {
+  const addProductImageField = () => {
     setProductImages([...productImages, ""]);
   };
 
+  // ----- VARIANT IMAGE HANDLERS -----
+
+
+
+
+  // ----- VARIANT SIZE HANDLERS -----
+  const toggleSize = (size) => {
+    const exists = selectedSizes.find((item) => item.size === size);
+    if (exists) {
+      setSelectedSizes(selectedSizes.filter((item) => item.size !== size));
+    } else {
+      setSelectedSizes([
+        ...selectedSizes,
+        { size, stock: "", basePrice: "", discountPrice: "", discountPercentage: "" },
+      ]);
+    }
+  };
+
+  const updateSizeField = (size, field, value) => {
+    setSelectedSizes(
+      selectedSizes.map((item) => (item.size === size ? { ...item, [field]: value } : item))
+    );
+  };
+
+  // ----- ADD VARIANT -----
+  const addVariant = () => {
+    if (selectedColor && selectedSizes.length > 0) {
+      const newVariant = {
+        color: selectedColor,
+        sizes: selectedSizes,
+      };
+      setVariants([...variants, newVariant]);
+      // Reset variant fields for next entry
+      setSelectedColor("");
+      setSelectedSizes([]);
+    }
+  };
+
+  // ----- FORM SUBMISSION -----
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const productData = {
+      name,
+      description,
+      brand,
+      productImages,
+      base_price: basePrice,
+      discount_price: discountPrice,
+      discount_percentage: discountPercentage,
+      stock,
+      category,
+      subCategory,
+      owner,
+      variants,
+    };
     try {
-      const response = await axios.post(
-        "http://localhost:5000/admin/addProduct",
-        {
-          name,
-          description,
-          brand,
-          productImages,
-          base_price: basePrice,
-          discount_price: discountPrice,
-          discount_percentage: discountPercentage,
-          subCategory,
-          stock,
-          category,
-          color,
-          size,
-        }
-      );
-      alert(response.data.message);
-      // Reset the form fields
-      setName("");
-      setDescription("");
-      setBrand("");
-      setProductImages([""]);
-      setBasePrice("");
-      setDiscountPrice("");
-      setDiscountPercentage("");
-      setStock("");
-      setCategory("");
-      setColor("");
-      setOwner("");
-      setSize("");
+      const res = await axios.post("http://localhost:5000/admin/addProduct", productData);
+      alert(res.data.message);
+      // Optionally reset states here
     } catch (error) {
       alert(error.response.data.message);
     }
@@ -140,244 +168,229 @@ const AddProduct = ({ setShowAddProduct }) => {
   return (
     <div className="w-full mx-auto bg-white p-8 rounded-lg shadow-md">
       <h1 className="text-2xl font-bold mb-6">Add New Product</h1>
-      <form onSubmit={handleSubmit}>
-        {/* Product Name */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">
-            Product Name
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Product Details */}
+        <div className="space-y-2">
           <input
             className="w-full px-3 py-2 border rounded-lg"
             type="text"
+            placeholder="Product Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-        </div>
-        {/* Product Description */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">
-            Product Description
-          </label>
           <textarea
             className="w-full px-3 py-2 border rounded-lg"
-            placeholder="Write your description here..."
+            placeholder="Product Description"
             rows="4"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-          ></textarea>
-        </div>
-        {/* Brand */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">Brand</label>
+          />
           <input
             className="w-full px-3 py-2 border rounded-lg"
             type="text"
+            placeholder="Brand"
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
           />
         </div>
-        {/* Add Photos */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">
-            Add Photos
-          </label>
+
+        {/* Main Product Images */}
+        <div>
+          <label className="block text-gray-700 font-bold mb-2">Add Product Images</label>
           <div className="flex space-x-4">
             {productImages.map((img, index) => (
-              <div key={index} className="relative text-center">
+              <div key={index} className="relative">
                 {img ? (
                   <>
-                    <img
-                      src={img}
-                      alt={`Uploaded ${index}`}
-                      className="mx-auto mb-2"
-                      height="400"
-                      width="309"
-                    />
-                    {/* X button to remove the image */}
+                    <img src={img} alt={`Product ${index}`} className="w-32 h-32 object-cover rounded-md" />
                     <button
                       type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute cursor-pointer top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                      onClick={() => removeProductImage(index)}
+                      className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
                     >
                       X
                     </button>
                   </>
                 ) : (
-                  <>
-                    <img
-                      alt="Placeholder"
-                      className="mx-auto mb-2"
-                      height="100"
-                      src="https://placehold.co/100x100"
-                      width="100"
-                    />
+                  <div className="w-32 h-32 border border-dashed flex items-center justify-center">
                     <input
                       id={`fileInput${index}`}
                       type="file"
                       accept="image/*"
-                      style={{ display: "none" }}
+                      className="hidden"
                       onChange={(e) => handleFileChange(index, e)}
                     />
-                    <label
-                      onClick={() => openFileDialog(index)}
-                      className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg cursor-pointer"
-                    >
+                    <button type="button" onClick={() => openFileDialog(index)} className="text-gray-600">
                       Add Image
-                    </label>
-                  </>
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
-            {cropModalOpen && tempImageSrc && (
-              <CropModal
-                imageSrc={tempImageSrc}
-                onCrop={handleCrop}
-                onClose={() => setCropModalOpen(false)}
-                aspect={309 / 400}
-              />
-            )}
           </div>
-          <button
-            type="button" // Avoid form submission
-            onClick={addImageField}
-            className="bg-blue-500 cursor-pointer text-white mx-auto my-3 px-4 py-2 rounded-lg"
-          >
-            + Add Another Image
+          <button type="button" onClick={addProductImageField} className="mt-2 text-blue-500">
+            + Add Another Product Image
           </button>
         </div>
-        {/* Pricing, Stock, and Category */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Base Price
-            </label>
-            <input
-              className="w-full px-3 py-2 border rounded-lg"
-              type="text"
-              value={basePrice}
-              onChange={(e) => setBasePrice(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Discount Price
-            </label>
-            <input
-              className="w-full px-3 py-2 border rounded-lg"
-              type="text"
-              value={discountPrice}
-              onChange={(e) => setDiscountPrice(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Discount Percentage
-            </label>
-            <input
-              className="w-full px-3 py-2 border rounded-lg"
-              type="text"
-              value={discountPercentage}
-              onChange={(e) => setDiscountPercentage(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">Stock</label>
-            <input
-              className="w-full px-3 py-2 border rounded-lg"
-              type="text"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-            />
-          </div>
-          {/* Category Dropdown */}
 
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">
-              Category
-            </label>
-            <select
-              className="w-full px-3 py-2 border rounded-lg"
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setSubCategory("");
-              }}
-            >
-              <option value="">Select Category</option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mt-4">
-            <label className="block text-gray-700 font-bold mb-2">
-              Subcategory
-            </label>
+        {/* Pricing & Details */}
+        <div className="grid grid-cols-2 gap-4">
+          <input
+            className="w-full px-3 py-2 border rounded-lg"
+            type="text"
+            placeholder="Base Price"
+            value={basePrice}
+            onChange={(e) => setBasePrice(e.target.value)}
+          />
+          <input
+            className="w-full px-3 py-2 border rounded-lg"
+            type="text"
+            placeholder="Discount Price"
+            value={discountPrice}
+            onChange={(e) => setDiscountPrice(e.target.value)}
+          />
+          <input
+            className="w-full px-3 py-2 border rounded-lg"
+            type="text"
+            placeholder="Discount Percentage"
+            value={discountPercentage}
+            onChange={(e) => setDiscountPercentage(e.target.value)}
+          />
+          <input
+            className="w-full px-3 py-2 border rounded-lg"
+            type="text"
+            placeholder="Stock"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <select
+            className="w-full px-3 py-2 border rounded-lg"
+            value={category}
+            onChange={(e) => { setCategory(e.target.value); setSubCategory(""); }}
+          >
+            <option value="">Select Category</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+          {selectedCategory && (
             <select
               className="w-full px-3 py-2 border rounded-lg"
               value={subCategory}
               onChange={(e) => setSubCategory(e.target.value)}
             >
               <option value="">Select Subcategory</option>
-              {selectedCategory &&
-                selectedCategory.subCategories.map((subCat, index) => (
-                  <option key={index} value={subCat}>
-                    {subCat}
-                  </option>
-                ))}
+              {selectedCategory.subCategories.map((subCat, index) => (
+                <option key={index} value={subCat}>
+                  {subCat}
+                </option>
+              ))}
             </select>
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">Owner</label>
-            <input
-              className="w-full px-3 py-2 border rounded-lg"
-              type="text"
-              value={owner}
-              onChange={(e) => setOwner(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">Color</label>
-            <input
-              className="w-full px-3 py-2 border rounded-lg"
-              type="text"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-bold mb-2">Size</label>
-            <input
-              className="w-full px-3 py-2 border rounded-lg"
-              type="text"
-              value={size}
-              onChange={(e) => setSize(e.target.value)}
-            />
-          </div>
+          )}
         </div>
-        {/* Form Buttons */}
-        <div className="flex justify-end space-x-4">
-          <button
-            onClick={() => setShowAddProduct(false)}
-            type="button"
-            className="bg-gray-200 cursor-pointer text-gray-700 px-4 py-2 rounded-lg"
+        <input
+          className="w-full px-3 py-2 border rounded-lg"
+          type="text"
+          placeholder="Owner"
+          value={owner}
+          onChange={(e) => setOwner(e.target.value)}
+        />
+
+        {/* Variants Section */}
+        <div className="border-t pt-4">
+          <h2 className="text-xl font-bold mb-4">Variants</h2>
+          {/* Variant Color */}
+          <select
+            className="w-full px-3 py-2 border rounded-lg mb-4"
+            value={selectedColor}
+            onChange={(e) => setSelectedColor(e.target.value)}
           >
+            <option value="">Select Variant Color</option>
+            {colorOptions.map((col) => (
+              <option key={col} value={col}>
+                {col}
+              </option>
+            ))}
+          </select>
+          {/* Variant Images */}
+       
+          {/* Variant Sizes */}
+          <div className="mb-4">
+            <label className="block text-gray-700 font-bold mb-2">Select Sizes</label>
+            <div className="flex space-x-4">
+              {sizeOptions.map((s) => (
+                <label key={s} className="flex items-center space-x-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedSizes.some((item) => item.size === s)}
+                    onChange={() => toggleSize(s)}
+                    className="form-checkbox"
+                  />
+                  <span>{s}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          {/* Inputs for each selected size */}
+          {selectedSizes.map((item) => (
+            <div key={item.size} className="grid grid-cols-5 gap-4 mb-2 items-center">
+              <div className="font-semibold">{item.size}</div>
+              <input
+                type="number"
+                placeholder="Stock"
+                value={item.stock}
+                onChange={(e) => updateSizeField(item.size, "stock", e.target.value)}
+                className="px-3 py-2 border rounded-lg"
+              />
+              <input
+                type="number"
+                placeholder="Base Price"
+                value={item.basePrice}
+                onChange={(e) => updateSizeField(item.size, "basePrice", e.target.value)}
+                className="px-3 py-2 border rounded-lg"
+              />
+              <input
+                type="number"
+                placeholder="Discount Price"
+                value={item.discountPrice}
+                onChange={(e) => updateSizeField(item.size, "discountPrice", e.target.value)}
+                className="px-3 py-2 border rounded-lg"
+              />
+              <input
+                type="number"
+                placeholder="Discount %"
+                value={item.discountPercentage}
+                onChange={(e) => updateSizeField(item.size, "discountPercentage", e.target.value)}
+                className="px-3 py-2 border rounded-lg"
+              />
+            </div>
+          ))}
+          <button type="button" onClick={addVariant} className="bg-green-500 text-white px-4 py-2 rounded-lg">
+            Add Variant
+          </button>
+        </div>
+
+        {/* Final Submit */}
+        <div className="flex justify-end mt-6 space-x-4">
+          <button type="button" onClick={() => setShowAddProduct(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">
             Cancel
           </button>
-          <button
-            type="submit"
-            className="bg-purple-600 cursor-pointer text-white px-4 py-2 rounded-lg flex items-center"
-          >
-            <i className="fas fa-save mr-2"></i> Save
+          <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded-lg">
+            Save Product
           </button>
         </div>
       </form>
     </div>
   );
 };
+
+
+
 
 //!croping comppo
 const getCroppedImg = (imageSrc, croppedAreaPixels) =>

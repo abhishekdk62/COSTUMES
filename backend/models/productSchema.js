@@ -1,23 +1,31 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    description: { type: String },
-    brand: { type: String },
-    productImages: { type: [String] }, // Array of image URLs
+    description: { type: String, required: true },
+    brand: { type: String, required: true },
     base_price: { type: Number, required: true },
-    discount_price: { type: Number },
-    discount_percentage: { type: Number },
-    stock: { type: Number, required: true },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
-    subCategory: { type: String }, // New field to store the subcategory as a string
-    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    color: { type: String },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
+    subCategory: { type: String, required: true }, 
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    variants: [
+      {
+        color: { type: String, required: true },
+        productImages: { type: [String], required: true },
+        size: [
+          {
+            size: { type: String, required: true },
+            stock: { type: Number, required: true },
+            base_price: { type: Number, required: true },
+            discount_price: { type: Number, required: true },
+            discount_percentage: { type: Number, required: true },
+          },
+        ],
+      },
+    ],
     isDeleted: { type: Boolean, default: false },
-    size: { type: String },
   },
-  { timestamps: true } // Automatically adds createdAt & updatedAt
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Product", productSchema);
- 
