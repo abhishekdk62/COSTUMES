@@ -131,16 +131,21 @@ const AddProduct = ({ setShowAddProduct }) => {
   const selectedCategory = categories.find((cat) => cat._id === category);
   const sizes = ["SM", "M", "L", "XL"];
   const colors = [
-    "Red",
-    "Blue",
-    "White",
-    "Black",
-    "Green",
-    "Yellow",
-    "Purple",
-    "Orange",
+    "red",
+    "blue",
+    "white",
+    "black",
+    "green",
+    "yellow",
+    "purple",
+    "orange",
+    "gray"
   ];
-
+  const removeVariant = (index) => {
+    const updatedVariants = [...variants];
+    updatedVariants.splice(index, 1);
+    setVariants(updatedVariants);
+  };
   // State variables for the current variant input
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
@@ -384,6 +389,15 @@ const AddProduct = ({ setShowAddProduct }) => {
                     Color: {variant.color}, Size: {variant.size}, Base Price:{" "}
                     {variant.base_price}, Discount Price:{" "}
                     {variant.discount_price}, Stock: {variant.stock}
+                    <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(index)}
+                      className="bg-red-500 text-white px-4 py-2 rounded"
+                    >
+                      Remove Variant
+                    </button>
+                  </div>
                   </li>
                 ))}
               </ul>
@@ -589,6 +603,8 @@ const ProductsList = ({
       setProductsList(response.data.products);
       setCurrentPage(response.data.page);
       setTotalPages(response.data.totalPages);
+      console.log(response.data.products);
+      
       setError("");
     } catch (err) {
       setError("Failed to fetch products. Please try again.");
@@ -699,10 +715,8 @@ const ProductsList = ({
             <tr>
               <th className="py-3 px-4 text-left">Product</th>
               <th className="py-3 px-4 text-left">Product ID</th>
-              <th className="py-3 px-4 text-left">Price</th>
-              <th className="py-3 px-4 text-left">Category</th>
-              <th className="py-3 px-4 text-left">Stock</th>
-              <th className="py-3 px-4 text-left">Added on</th>
+              <th className="py-3 px-4 text-left">owner</th>
+              <th className="py-3 px-4 text-left">Brand</th>
               <th className="py-3 px-4 text-left">Actions</th>
             </tr>
           </thead>
@@ -730,9 +744,8 @@ const ProductsList = ({
                 >
                   <td className="py-3 px-4">{product.name}</td>
                   <td className="py-3 px-4 text-blue-600">{product._id}</td>
-                  <td className="py-3 px-4">{product.discount_price}</td>
-                  <td className="py-3 px-4">{product.color}</td>
-                  <td className="py-3 px-4">{product.size}</td>
+                  <td className="py-3 px-4">{product.owner}</td>
+                  <td className="py-3 px-4">{product.brand}</td>
                   <td className="py-3 px-4 flex space-x-4">
                     {/* Edit Button */}
                     <button
@@ -862,8 +875,8 @@ const EditProduct = ({ setShowEditProduct }) => {
   // Constants
   const sizes = ["SM", "M", "L", "XL"];
   const colors = [
-    "Red", "Blue", "White", "Black", 
-    "Green", "Yellow", "Purple", "Orange"
+    "red", "blue", "white", "black", 
+    "green", "yellow", "purple", "orange","gray"
   ];
 
   // Fetch product details on mount
@@ -1146,7 +1159,6 @@ const EditProduct = ({ setShowEditProduct }) => {
         category,
         subCategory,
         owner,
-        productImages, // These are now only URLs
         variants: variants.map(variant => ({
           color: variant.color,
           size: variant.size,
@@ -1221,51 +1233,7 @@ const EditProduct = ({ setShowEditProduct }) => {
           </div>
         </div>
         
-        {/* Product Images Section */}
-        <div className="mb-6">
-          <label className="block text-gray-700 font-bold mb-2">Main Product Images</label>
-          <div className="flex flex-wrap gap-4 mb-2">
-            {productImages.map((img, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={img}
-                  alt={`Product ${index}`}
-                  className="w-32 h-32 object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeProductImage(index)}
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-            
-            {/* Add Image Button */}
-            <div className="w-32 h-32 border border-dashed border-gray-300 rounded-md flex items-center justify-center">
-              <input
-                id="addProductImage"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={addProductImage}
-              />
-              <button
-                type="button"
-                onClick={() => document.getElementById('addProductImage').click()}
-                className="text-gray-600"
-                disabled={loading}
-              >
-                {loading ? "Uploading..." : "Add Image"}
-              </button>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500">
-            Images will be uploaded to Cloudinary automatically. Maximum 5 images recommended.
-          </p>
-        </div>
-        
+    
         {/* Category Selection */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
@@ -1439,6 +1407,8 @@ const EditProduct = ({ setShowEditProduct }) => {
                       Remove Variant
                     </button>
                   </div>
+
+
                 </div>
               ))}
             </div>

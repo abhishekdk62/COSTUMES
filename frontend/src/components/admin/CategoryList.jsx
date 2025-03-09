@@ -394,7 +394,7 @@ const AddCategory = ({ setShowAddCategory }) => {
                 value={subCategoryInput}
                 onChange={(e) => setSubCategoryInput(e.target.value)}
               />
-              <button
+              <button type="button"
                 className="bg-blue-500 py-2 px-3 m-2 rounded-xl cursor-pointer font-bold text-white"
                 onClick={handleAddSubCategory}
               >
@@ -540,16 +540,14 @@ const AddCategory = ({ setShowAddCategory }) => {
               >
                 Discounts/Offers
               </label>
-              <select
+              <input type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 id="discounts-offers"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-              >
-                <option>10</option>
-                <option>20</option>
-                <option>30</option>
-              </select>
+              />
+              
+      
             </div>
           </div>
         </div>
@@ -582,7 +580,7 @@ const EditCategory = ({ setEditCategory }) => {
   const [categoryName, setCategoryName] = useState("");
   const [description, setDescription] = useState("");
   const [visibilityStatus, setVisibilityStatus] = useState("Active");
-  const [discount, setDiscount] = useState("10");
+  const [discount, setDiscount] = useState();
   const [thumbnail, setThumbnail] = useState("");
   const [subCategories, setSubCategories] = useState([]);
 
@@ -600,6 +598,7 @@ const EditCategory = ({ setEditCategory }) => {
         setCategoryName(category.name);
         setDescription(category.description);
         setSubCategories(category?.subCategories);
+        setDiscount(category.discount)
 
         setThumbnail(category.thumbnail || ""); // Set thumbnail if exists
       } catch (error) {
@@ -843,16 +842,13 @@ const EditCategory = ({ setEditCategory }) => {
               >
                 Discounts/Offers
               </label>
-              <select
+              <input type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 id="discounts-offers"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
-              >
-                <option>10</option>
-                <option>20</option>
-                <option>30</option>
-              </select>
+              />
+               
             </div>
           </div>
         </div>

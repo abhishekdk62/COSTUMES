@@ -25,7 +25,7 @@ const ListProducts = () => {
 
   // Fetch products from backend with pagination
   const getProducts = async () => {
-    try {
+    try { 
       setLoading(true);
       const params = new URLSearchParams(location.search);
       const categoryFromURL = params.get("category");
@@ -47,6 +47,7 @@ const ListProducts = () => {
 
       // Expected response format: { products, page, totalPages }
       setProducts(response.data.products);
+      
 
       setCurrentPage(response.data.page);
       setTotalPages(response.data.totalPages);
@@ -100,7 +101,8 @@ const ListProducts = () => {
   // Handle viewing a product
   const handleProductView = (product) => {
     localStorage.setItem("productInfo", JSON.stringify(product));
-    navigate("/product");
+    navigate(`/product/${product._id}`);
+
   };
 
   return (
@@ -266,7 +268,7 @@ const ListProducts = () => {
                             {ratingDisplay}
                           </div>
                           <img
-                            src={product.productImages?.[0]}
+                            src={product.variants[0].productImages?.[0]}
                             alt={product.name}
                             className="w-full h-full object-cover  transition duration-300 ease-in-out group-hover:brightness-75"
                           />
@@ -282,10 +284,10 @@ const ListProducts = () => {
                       </p>
                       <div className="flex items-center justify-center space-x-2 mt-0">
                         <div className="text-black font-medium text-s">
-                          Rs.{product.discount_price}.00
+                          Rs.{product.variants[0].discount_price}.00
                         </div>
                         <div className="text-gray-700 text-s line-through">
-                          Rs.{product.base_price}.00
+                          Rs.{product.variants[0].base_price}.00
                         </div>
                       </div>
                     </div>

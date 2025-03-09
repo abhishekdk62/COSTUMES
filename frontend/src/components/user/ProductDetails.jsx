@@ -1,5 +1,7 @@
-import React, { use, useDebugValue, useEffect, useState } from "react";
+import React, { use, useDebugValue, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { useLocation, useParams } from "react-router-dom";
+
 import { useNavigate } from "react-router-dom";
 import ReactImageMagnify from "react-image-magnify";
 import { Star } from "lucide-react";
@@ -8,17 +10,42 @@ const ProductDetails = () => {
   const [productDetails, setProductDetails] = useState(null);
   const [selectedTab, setSelectedTab] = useState("Description");
   const [userInfo, setUserInfo] = useState(null);
-  const [similarProducts, setSimilarProducts] = useState(null);
+  const [similarProducts, setSimilarProducts] = useState([]);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedColor, setSelectedColor] = useState();
+  const [catDetails, setCatDetails] = useState();
   const [selectedImage, setSelectedImage] = useState(null);
   const [stockMessage, setStockMessage] = useState("");
   const [stockMessageColor, setStockMessageColor] = useState("");
   const [loading, setLoding] = useState(false);
+  // State for the selected variant (if needed)
+  const [selectedVariant, setSelectedVariant] = useState(null);
+
   const [reviews, setReviews] = useState([
     { id: 1, name: "John Doe", rating: 4, text: "Great product!" },
   ]);
   const [newReview, setNewReview] = useState({ rating: 5, text: "" });
 
   const navigate = useNavigate();
+
+  const { id } = useParams();
+
+  const prodById = async (id) => {
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/admin/getproduct/${id}`
+      );
+      setProductDetails(response.data.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      prodById(id);
+    }
+  }, [id]);
 
   const fetchReviews = async () => {
     try {
@@ -31,26 +58,27 @@ const ProductDetails = () => {
     }
   };
   const handleAddReview = async () => {
-    try {
-      if (!newReview.text || !newReview.rating) {
-        alert("Please enter Rating and the details");
-        return;
-      }
+    if (productDetails && userInfo) {
+      try {
+        if (!newReview.text || !newReview.rating) {
+          alert("Please enter Rating and the details");
+          return;
+        }
 
-      const response = await axios.post("http://localhost:5000/user/review", {
-        newReview,
-        productId: productDetails._id,
-        userId: userInfo._id,
-      });
-      if (response.status == 200) {
-        alert("Review Added");
+        const response = await axios.post("http://localhost:5000/user/review", {
+          newReview,
+          productId: productDetails?._id,
+          userId: userInfo?._id,
+        });
+        if (response.status == 200) {
+          alert("Review Added");
+        }
+        fetchReviews();
+      } catch (error) {
+        console.log(error);
       }
-      fetchReviews();
-    } catch (error) {
-      console.log(error);
     }
   };
-  const [catDetails, setCatDetails] = useState();
   useEffect(() => {
     if (!productDetails?.category) return; // Prevents the request when _id is missing
     const getCatName = async () => {
@@ -77,68 +105,63 @@ const ProductDetails = () => {
   }, [productDetails]);
 
   const handleProductView = (product) => {
-    localStorage.setItem("productInfo", JSON.stringify(product));
-    navigate("/product");
+    prodById(product._id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   useEffect(() => {
+    if (!productDetails) return; // Wait until productDetails is available
+
     setLoding(true);
-    const val = localStorage.getItem("productInfo");
+
+    // Retrieve user info as before
     const user = localStorage.getItem("user");
     const parsedUser = JSON.parse(user);
     setUserInfo(parsedUser);
 
-    if (val) {
-      const parsedVal = JSON.parse(val);
-      setProductDetails(parsedVal);
-      const getSimilarProducts = async () => {
-        try {
-          const response = await axios.post(
-            "http://localhost:5000/user/getsimilarproducts",
-            {
-              categoryId: parsedVal.category,
-            }
-          );
-          setSimilarProducts(response.data.data);
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setLoding(false);
-        }
-      };
-
-      if (parsedVal) {
-        getSimilarProducts();
+    // Fetch similar products based on the product's category
+    const getSimilarProducts = async () => {
+      try {
+        const response = await axios.post(
+          "http://localhost:5000/user/getsimilarproducts",
+          {
+            categoryId: productDetails.category._id,
+          }
+        );
+        setSimilarProducts(response.data.data);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoding(false);
       }
-    }
-  }, []);
+    };
+
+    getSimilarProducts();
+  }, [productDetails]);
 
   const [rating, setRating] = useState([
     { _id: 0, averageRating: 0, totalReviews: 0 },
   ]);
 
   useEffect(() => {
-    const val = localStorage.getItem("productInfo");
-    const parsedVal = JSON.parse(val);
-
     const getRating = async () => {
       try {
         const response = await axios.post("http://localhost:5000/user/rating", {
-          id: parsedVal._id,
+          id: productDetails._id,
         });
         setRating(response.data);
       } catch (error) {
         console.log(error);
       }
     };
-    if (parsedVal) {
+    if (productDetails) {
       getRating();
     }
   }, []);
 
   useEffect(() => {
     if (productDetails) {
-      const stockNumber = productDetails.stock;
+      const stockNumber = selectedVariant?.stock;
 
       if (stockNumber === 0) {
         // Check for 0 first
@@ -152,8 +175,46 @@ const ProductDetails = () => {
         setStockMessageColor("green");
       }
     }
-  }, [productDetails]); // Add dependency array
+  }, [productDetails, selectedVariant]); // Add dependency array
 
+  const variantsByColor = useMemo(() => {
+    return (
+      productDetails?.variants.reduce((acc, variant) => {
+        if (!acc[variant.color]) {
+          acc[variant.color] = [];
+        }
+        acc[variant.color].push(variant);
+        return acc;
+      }, {}) || {}
+    );
+  }, [productDetails]);
+
+  // Once productDetails and variantsByColor are available, set the initial selected color.
+  useEffect(() => {
+    if (productDetails && Object.keys(variantsByColor).length > 0) {
+      const initialColor = Object.keys(variantsByColor)[0];
+      setSelectedColor(initialColor);
+      const uniqueSizes = [
+        ...new Set(variantsByColor[initialColor].map((v) => v.size)),
+      ];
+      if (uniqueSizes.length > 0) {
+        setSelectedSize(uniqueSizes[0]);
+      }
+    }
+  }, [productDetails, variantsByColor]);
+
+  useEffect(() => {
+    if (selectedColor && selectedSize && variantsByColor[selectedColor]) {
+      const variant = variantsByColor[selectedColor].find(
+        (v) => v.size === selectedSize
+      );
+      setSelectedVariant(variant);
+    }
+  }, [selectedColor, selectedSize, variantsByColor]);
+
+  if (!productDetails) {
+    return <div>Loading...</div>;
+  }
   // Return a loading state until productDetails is available
   if (!productDetails) {
     return <ProductDetailShimmer />;
@@ -206,10 +267,14 @@ const ProductDetails = () => {
                   height: 400,
                   width: 280,
 
-                  src: selectedImage || productDetails.productImages[0],
+                  src:
+                    selectedImage ||
+                    productDetails?.variants[0].productImages[0],
                 },
                 largeImage: {
-                  src: selectedImage || productDetails.productImages[0],
+                  src:
+                    selectedImage ||
+                    productDetails?.variants[0].productImages[0],
                   width: 1200, // Higher resolution for zoomed view
                   height: 1200,
                 },
@@ -222,7 +287,7 @@ const ProductDetails = () => {
             />
           </div>{" "}
           <div className="flex gap-5">
-            {productDetails.productImages.map((productImage, index) => (
+            {selectedVariant?.productImages.map((productImage, index) => (
               <div
                 key={index}
                 onClick={() => setSelectedImage(productImage)}
@@ -263,20 +328,57 @@ const ProductDetails = () => {
           <div className="mb-4">
             <h2 className="text-lg font-semibold mb-2">Select Size</h2>
             <div className="flex space-x-2">
-              <button className="px-4 py-2 border rounded-lg">XS</button>
-              <button className="px-4 py-2 border rounded-lg">S</button>
-              <button className="px-4 py-2 border rounded-lg">M</button>
-              <button className="px-4 py-2 border rounded-lg">L</button>
-              <button className="px-4 py-2 border rounded-lg">XL</button>
+              {selectedColor && (
+                <div className="mb-4">
+                  <div className="flex space-x-2">
+                    {[
+                      ...new Set(
+                        variantsByColor[selectedColor]?.map((v) => v.size)
+                      ),
+                    ].map((size, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSelectedSize(size);
+                        }}
+                        className={`px-4 py-2 border rounded-lg ${
+                          selectedSize === size
+                            ? "bg-purple-600 text-white"
+                            : "bg-white text-gray-600"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="mb-4">
             <h2 className="text-lg font-semibold mb-2">Colours Available</h2>
             <div className="flex space-x-2">
-              <button className="w-8 h-8 rounded-full bg-black"></button>
-              <button className="w-8 h-8 rounded-full bg-pink-500"></button>
-              <button className="w-8 h-8 rounded-full bg-yellow-500"></button>
-              <button className="w-8 h-8 rounded-full bg-red-500"></button>
+              {Object.keys(variantsByColor).map((color) => (
+                <button
+                  key={color}
+                  onClick={() => {
+                    setSelectedColor(color);
+                    const defaultImage = variantsByColor[color][0]?.productImages[0];
+                    setSelectedImage(defaultImage);
+                  
+                    const uniqueSizes = [
+                      ...new Set(variantsByColor[color].map((v) => v.size)),
+                    ];
+                    if (uniqueSizes.length > 0) {
+                      setSelectedSize(uniqueSizes[0]);
+                    }
+                  }}
+                  className={`w-8 cursor-pointer h-8 rounded-full border border-gray-300 ${
+                    selectedColor === color ? "ring-2 ring-purple-600" : ""
+                  }`}
+                  style={{ backgroundColor: color }}
+                ></button>
+              ))}
             </div>
           </div>
           <div className="flex items-center mb-4">
@@ -285,10 +387,10 @@ const ProductDetails = () => {
             </button>
             <div className="flex gap-3">
               <span className="text-2xl font-bold">
-                ${productDetails.discount_price}
+                ${selectedVariant?.discount_price}
               </span>
               <span className="text-2xl text-red-500 line-through font-bold ml-2">
-                ${productDetails.base_price}
+                ${selectedVariant?.base_price}
               </span>
             </div>
           </div>
@@ -465,12 +567,14 @@ const ProductDetails = () => {
                   alt={product.name}
                   className="w-full rounded-lg mb-4"
                   height="400"
-                  src={product.productImages[0]}
+                  src={product.variants[0].productImages[0]}
                   width="300"
                 />
                 <h3 className="text-lg font-semibold">{product.name}</h3>
                 <p className="text-gray-600">{product.brand}</p>
-                <p className="text-lg font-bold">${product.discount_price}</p>
+                <p className="text-lg font-bold">
+                  ${product.variants[0].discount_price}
+                </p>
               </div>
             ))}
           </div>
@@ -489,9 +593,7 @@ const ProductDetailShimmer = () => {
       <nav className="mb-4">
         <div className="h-4 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
       </nav>
-      {/* Product Section */}
       <div className="flex flex-col lg:flex-row bg-white p-6 rounded-lg shadow-md">
-        {/* Product Images */}
         <div className="flex flex-col items-center lg:w-1/2">
           <div className="w-full h-64 bg-gray-200 rounded-lg mb-4 animate-pulse"></div>
           <div className="flex space-x-2">

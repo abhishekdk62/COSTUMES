@@ -8,7 +8,7 @@ const Product = require("../models/productSchema");
 const Category = require("../models/categorySchema");
 const Review = require("../models/reviewSchema");
 const { log } = require("console");
-const { default: mongoose } = require("mongoose");
+const { default: mongoose } = require("mongoose"); 
 
 const signup = async (req, res) => {
   try {
@@ -204,53 +204,98 @@ const getSimilarProducts = async (req, res) => {
 
 const filteredProducts = async (req, res) => {
   try {
-    const { searchTerm, category, minPrice, maxPrice, sortBy, page, limit } =
-      req.body;
+    const {
+      searchTerm,
+      category,
+      minPrice,
+      maxPrice,
+      sortBy,
+      page,
+      limit,
+    } = req.body;
+    
 
     // Set default pagination values if not provided
     const currentPage = parseInt(page) || 1;
     const perPage = parseInt(limit) || 10;
 
-    // Build query based on filters
-    let query = {};
+    // Build the initial match stage for product-level filters
+    let match = { isDeleted: false };
     if (searchTerm) {
-      query.name = { $regex: searchTerm, $options: "i" }; // Case-insensitive search
+      match.name = { $regex: searchTerm, $options: "i" }; // Case-insensitive search
     }
     if (category) {
-      query.category = category;
+      match.category = new mongoose.Types.ObjectId(category);
     }
+
+    // Start building the aggregation pipeline
+    const pipeline = [];
+    pipeline.push({ $match: match });
+
+    // Add a field for the minimum discount price among all variants
+    pipeline.push({
+      $addFields: {
+        minDiscountPrice: { $min: "$variants.discount_price" },
+      },
+    });
+
+    // If price range filtering is provided, add a match stage for the computed field
     if (minPrice !== undefined && maxPrice !== undefined) {
-      query.discount_price = { $gte: minPrice, $lte: maxPrice };
+      pipeline.push({
+        $match: {
+          minDiscountPrice: {
+            $gte: parseFloat(minPrice),
+            $lte: parseFloat(maxPrice),
+          },
+        },
+      });
     }
 
     // Build sort options based on sortBy
-    let sortOptions = {};
-    if (sortBy === "priceAsc") sortOptions.discount_price = 1;
-    if (sortBy === "priceDesc") sortOptions.discount_price = -1;
-    if (sortBy === "nameAsc") sortOptions.name = 1;
-    if (sortBy === "nameDesc") sortOptions.name = -1;
+    let sortStage = {};
+    if (sortBy === "priceAsc") sortStage.minDiscountPrice = 1;
+    if (sortBy === "priceDesc") sortStage.minDiscountPrice = -1;
+    if (sortBy === "nameAsc") sortStage.name = 1;
+    if (sortBy === "nameDesc") sortStage.name = -1;
+    if (Object.keys(sortStage).length > 0) {
+      pipeline.push({ $sort: sortStage });
+    }
 
-    // Count total matching documents
-    const total = await Product.countDocuments(query);
-    const totalPages = Math.ceil(total / perPage);
+    // Use $facet to get both paginated results and total count
+    pipeline.push({
+      $facet: {
+        totalCount: [{ $count: "count" }],
+        products: [
+          { $skip: (currentPage - 1) * perPage },
+          { $limit: perPage },
+        ],
+      },
+    });
 
-    // Retrieve paginated products
-    const products = await Product.find({ ...query, isDeleted: false })
-      .sort(sortOptions)
-      .skip((currentPage - 1) * perPage)
-      .limit(perPage);
+    // Execute the aggregation pipeline
+    const result = await Product.aggregate(pipeline);
+    const totalCount =
+      result[0].totalCount[0] && result[0].totalCount[0].count
+        ? result[0].totalCount[0].count
+        : 0;
+    const totalPages = Math.ceil(totalCount / perPage);
+    const products = result[0].products;
 
     res.status(200).json({
       products,
-      total,
+      total: totalCount,
       page: currentPage,
       totalPages,
     });
   } catch (error) {
     console.error("Error fetching products:", error);
-    res.status(500).json({ error: "Server error", message: error.message });
+    res
+      .status(500)
+      .json({ error: "Server error", message: error.message });
   }
 };
+
+
 
 const searchProducts = async (req, res) => {
   try {
