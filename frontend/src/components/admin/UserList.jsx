@@ -23,7 +23,8 @@ const Customer = () => {
         ? `?q=${searchQuery}&page=${page}&limit=10`
         : `?page=${page}&limit=6`;
       const { data } = await axios.get(
-        `http://localhost:5000/admin/searchusers${queryString}`
+        `http://localhost:5000/admin/searchusers${queryString}`,
+        { withCredentials: true }
       );
       // Expecting backend to return { users, page, totalPages, ... }
       setUserList(data.users);
@@ -55,10 +56,14 @@ const Customer = () => {
 
   const updateStatus = async (id, status) => {
     try {
-      const { data } = await axios.post("http://localhost:5000/user/update", {
-        _id: id,
-        status,
-      });
+      const { data } = await axios.post(
+        "http://localhost:5000/user/update",
+        {
+          _id: id,
+          status,
+        },
+        { withCredentials: true }
+      );
       setUserList((prevUsers) =>
         prevUsers.map((user) =>
           user._id === id ? { ...user, status: data.updatedUser.status } : user
@@ -142,9 +147,7 @@ const Customer = () => {
             {Array.from({ length: 3 }).map((_, index) => (
               <tr
                 key={index}
-                className={`border-b ${
-                  index % 2 === 0 ? "bg-gray-50" : ""
-                }`}
+                className={`border-b ${index % 2 === 0 ? "bg-gray-50" : ""}`}
               >
                 <td className="p-3 flex items-center">
                   <div className="w-10 h-10 rounded-full mr-3 bg-gray-200 animate-pulse"></div>
@@ -188,9 +191,7 @@ const Customer = () => {
               userList.map((customer, index) => (
                 <tr
                   key={customer._id}
-                  className={`border-b ${
-                    index % 2 === 0 ? "bg-gray-50" : ""
-                  }`}
+                  className={`border-b ${index % 2 === 0 ? "bg-gray-50" : ""}`}
                 >
                   <td className="p-3 flex items-center">
                     <img
@@ -225,9 +226,7 @@ const Customer = () => {
                         if (confirmChange) {
                           updateStatus(
                             customer._id,
-                            customer.status === "Active"
-                              ? "Blocked"
-                              : "Active"
+                            customer.status === "Active" ? "Blocked" : "Active"
                           );
                         }
                       }}
@@ -255,62 +254,62 @@ const Customer = () => {
 
       {/* Fixed Pagination UI at Bottom */}
       <div className="fixed bottom-0 left-0 right-0 p-2 bg-background bg-gray-100 shadow-sm border-t border-border">
-      <div className="flex justify-center items-center space-x-1 max-w-xs mx-auto">
-        <button
-          onClick={() => {
-            if (currentPage > 1) {
-              setCurrentPage(currentPage - 1)
-            }
-          }}
-          disabled={currentPage <= 1}
-          className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
-          aria-label="Previous page"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex justify-center items-center space-x-1 max-w-xs mx-auto">
+          <button
+            onClick={() => {
+              if (currentPage > 1) {
+                setCurrentPage(currentPage - 1);
+              }
+            }}
+            disabled={currentPage <= 1}
+            className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+            aria-label="Previous page"
           >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
 
-        <span className="text-sm font-medium">
-          Page {currentPage} of {totalPages}
-        </span>
+          <span className="text-sm font-medium">
+            Page {currentPage} of {totalPages}
+          </span>
 
-        <button
-          onClick={() => {
-            if (currentPage < totalPages) {
-              setCurrentPage(currentPage + 1)
-            }
-          }}
-          disabled={currentPage >= totalPages}
-          className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
-          aria-label="Next page"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <button
+            onClick={() => {
+              if (currentPage < totalPages) {
+                setCurrentPage(currentPage + 1);
+              }
+            }}
+            disabled={currentPage >= totalPages}
+            className="h-8 w-8 flex items-center justify-center rounded-md bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+            aria-label="Next page"
           >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+        </div>
       </div>
-    </div>
     </div>
   );
 };

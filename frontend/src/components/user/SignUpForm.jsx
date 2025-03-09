@@ -70,6 +70,10 @@ const LoginForm = () => {
       setLoading(false); // Reset loading state
     }
   };
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:5000/auth/google/signup"    
+  };
+
 
   return (
     <div className="flex flex-col md:flex-row bg-white shadow-lg rounded-lg h-screen overflow-hidden">
@@ -197,14 +201,11 @@ const LoginForm = () => {
         </div>
 
         <div className="mb-6">
-          <button className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
+          <button onClick={handleGoogleLogin}  className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
             <FaGoogle className="text-red-500 mr-2" />
             <span className="text-purple-600">Continue With Google</span>
           </button>
-          <button className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
-            <FaTwitter className="text-blue-500 mr-2" />
-            <span className="text-purple-600">Continue With Twitter</span>
-          </button>
+         
         </div>
 
       </div>

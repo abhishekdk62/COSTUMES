@@ -6,43 +6,36 @@ const generateToken = require("../utils/generateToken");
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Check if the email belongs to an Admin
+    // Find user (Admin first, then User)
     let user = await Admin.findOne({ email });
-    let role = "admin";
-
+    let role = user ? "admin" : "user";
     if (!user) {
-      // If not found in Admin, check in Users
       user = await User.findOne({ email });
-      role = "user";
 
       if (!user) {
         return res.status(400).json({ message: "Incorrect Email address" });
       }
-
-      // ✅ Blocked User Check
       if (!user.status) {
-        return res
-          .status(403)
-          .json({ message: "Your account is blocked. Contact support." });
+        return res.status(403).json({ message: "Your account is blocked. Contact support." });
       }
     }
-
-    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Incorrect Password" });
     }
-
-    // Generate token with role
     const token = generateToken(user._id, role);
-
-    // Send response with token and role
-    res.status(200).json({ token, role, user });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Secure in production
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+    res.status(200).json({ message: "Login successful", role, user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 const updateProfile = async (req, res) => {
   try {
     const { _id, status } = req.body;
@@ -66,7 +59,23 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  try {
+    res.cookie("token", "", {
+      httpOnly: true,
+      expires: new Date(0), // Expire the cookie immediately
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
 
 
 
-module.exports = { login, updateProfile };
+
+
+module.exports = { login,logout, updateProfile };

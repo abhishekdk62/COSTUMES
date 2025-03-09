@@ -13,7 +13,7 @@ const ForgotPassword = ({ setForgotPassword }) => {
   const [message, setMessage] = useState("");
   const [otpVerified, setOtpVerified] = useState(false);
 
-  const handleSendOTP = async () => {
+  const handleSendOTP = async () => { 
     try {
       await axios.post("http://localhost:5000/user/send-otp", { email });
       setOtpSent(true);

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { FaGoogle, FaTwitter, FaEye, FaEyeSlash } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../../../slices/authSlice";
 
@@ -38,8 +38,11 @@ const LoginForm = ({ setForgotPassword }) => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/auth/google";
+   window.location.href = "http://localhost:5000/auth/google/login"
   };
+  const [searchParams] = useSearchParams();
+  const errors = searchParams.get("error");
+
 
   return (
     <div className="flex flex-col md:flex-row bg-white shadow-lg rounded-lg h-screen overflow-hidden">
@@ -64,6 +67,7 @@ const LoginForm = ({ setForgotPassword }) => {
         {error && (
           <div className="text-center text-red-500 text-sm">{error}</div>
         )}
+       
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
@@ -123,7 +127,8 @@ const LoginForm = ({ setForgotPassword }) => {
             Sign up
           </span>
         </p>
-
+             {errors && <p className="text-red-500">{error}</p>}
+      
         <div className="flex items-center my-4">
           <hr className="flex-grow border-gray-300" />
           <span className="mx-2 text-gray-400">OR</span>

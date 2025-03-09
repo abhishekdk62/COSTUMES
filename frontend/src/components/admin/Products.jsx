@@ -105,7 +105,8 @@ const AddProduct = ({ setShowAddProduct }) => {
           subCategory,
           owner,
           variants, // Include your variants array
-        }
+        },  { withCredentials: true }
+
       );
 
       alert(response.data.message);
@@ -629,7 +630,8 @@ const ProductsList = ({
     if (confirmDelete) {
       try {
         const response = await axios.put(
-          `http://localhost:5000/admin/softdeleteproduct/${id}`
+          `http://localhost:5000/admin/softdeleteproduct/${id}`,  { withCredentials: true }
+
         );
         if (response.status === 200) {
           alert("Product deleted successfully!");
@@ -1171,7 +1173,8 @@ const EditProduct = ({ setShowEditProduct }) => {
       
       const response = await axios.put(
         `http://localhost:5000/admin/editproduct/${productDetails._id}`,
-        payload
+        payload,  { withCredentials: true }
+
       );
       
       alert(response.data.message);
@@ -1577,7 +1580,8 @@ const RemovedProducts = ({ setShowRemoved }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        "http://localhost:5000/admin/searchdeletedproducts"
+        "http://localhost:5000/admin/searchdeletedproducts",  { withCredentials: true }
+
       );
 
       setProductsList(response.data);
@@ -1592,7 +1596,8 @@ const RemovedProducts = ({ setShowRemoved }) => {
     try {
       const response = await axios.put(
         "http://localhost:5000/admin/restoreprod",
-        { id: id }
+        { id: id },  { withCredentials: true }
+
       );
       if (response.status == 200) {
         alert("Product Activated Succesfully");

@@ -18,7 +18,8 @@ const CategoryCard = ({
         "http://localhost:5000/admin/restorecat",
         {
           id: id,
-        }
+        },  { withCredentials: true }
+
       );
       if (response.status == 200) {
         alert("Category restored");
@@ -37,7 +38,8 @@ const CategoryCard = ({
       try {
         const response = await axios.put(
           `http://localhost:5000/admin/softdelete/${id}`,
-          { isDeleted: true } // Updating the isDeleted field
+          { isDeleted: true },  { withCredentials: true }
+
         );
         fetchCategories(""); // Ensure correct fetching
         alert(response.data.message);
@@ -117,7 +119,8 @@ const CategoryList = ({
       setLoading(true);
       setError(null);
       const response = await axios.get(
-        `http://localhost:5000/admin/searchcategories?q=${query}&page=${page}&limit=10`
+        `http://localhost:5000/admin/searchcategories?q=${query}&page=${page}&limit=10`, 
+
       );
       // Assuming the backend response structure:
       // { categories, total, page, totalPages }
@@ -340,7 +343,8 @@ const AddCategory = ({ setShowAddCategory }) => {
           subCategories,
           discount,
           thumbnail, // sending the thumbnail URL to the backend
-        }
+        },  { withCredentials: true }
+
       );
       alert("Category added successfully!");
       setCategoryName("");
@@ -394,7 +398,8 @@ const AddCategory = ({ setShowAddCategory }) => {
                 value={subCategoryInput}
                 onChange={(e) => setSubCategoryInput(e.target.value)}
               />
-              <button type="button"
+              <button
+                type="button"
                 className="bg-blue-500 py-2 px-3 m-2 rounded-xl cursor-pointer font-bold text-white"
                 onClick={handleAddSubCategory}
               >
@@ -540,14 +545,13 @@ const AddCategory = ({ setShowAddCategory }) => {
               >
                 Discounts/Offers
               </label>
-              <input type="text"
+              <input
+                type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 id="discounts-offers"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
               />
-              
-      
             </div>
           </div>
         </div>
@@ -592,13 +596,14 @@ const EditCategory = ({ setEditCategory }) => {
 
       try {
         const response = await axios.post(
-          `http://localhost:5000/admin/getcategory/${id}`
+          `http://localhost:5000/admin/getcategory/${id}`,  
+
         );
         const category = response.data.data;
         setCategoryName(category.name);
         setDescription(category.description);
         setSubCategories(category?.subCategories);
-        setDiscount(category.discount)
+        setDiscount(category.discount);
 
         setThumbnail(category.thumbnail || ""); // Set thumbnail if exists
       } catch (error) {
@@ -645,7 +650,8 @@ const EditCategory = ({ setEditCategory }) => {
           discount: discount,
           visibilityStatus: visibilityStatus,
           thumbnail: thumbnail, // Send the thumbnail URL to the backend
-        }
+        },  { withCredentials: true }
+
       );
       alert(response.data.message);
     } catch (error) {
@@ -842,13 +848,13 @@ const EditCategory = ({ setEditCategory }) => {
               >
                 Discounts/Offers
               </label>
-              <input type="text"
+              <input
+                type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 id="discounts-offers"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
               />
-               
             </div>
           </div>
         </div>
@@ -886,7 +892,8 @@ const RemovedCategory = ({ setShowRemovedCategory, showRemovedCategory }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        "http://localhost:5000/admin/searchdeletedcat"
+        "http://localhost:5000/admin/searchdeletedcat",
+        { withCredentials: true }
       );
       setCategoryList(response.data);
     } catch (error) {

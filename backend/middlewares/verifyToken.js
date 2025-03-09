@@ -1,17 +1,21 @@
 const jwt = require("jsonwebtoken");
-const SECRET = process.env.SECRET_KEY // Store this in .env in production
-
-const adminAuth = (req, res, next) => {
-  const token = req.header("Authorization");
-  if (!token) return res.status(401).json({ error: "Access Denied" });
-
-  try {
-    const verified = jwt.verify(token, SECRET);
-    req.admin = verified; // Attach admin details to request
-    next();
-  } catch (err) {
-    res.status(400).json({ error: "Invalid Token" });
-  }
+const authMiddleware = (allowedRoles = []) => {
+  return (req, res, next) => {
+    const token = req.cookies.token; // Get token from cookie
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const verified = jwt.verify(token, "your_secret_key"); // Verify JWT
+      req.user = verified; // Attach user info to request
+      // ✅ Check if the user's role is in the allowedRoles array
+      if (allowedRoles.length > 0 && !allowedRoles.includes(verified.role)) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+      next(); // ✅ Continue to the route
+    } catch (error) {
+      return res.status(403).json({ message: "Invalid token" });
+    }
+  };
 };
-
-module.exports = adminAuth;
+module.exports = authMiddleware;

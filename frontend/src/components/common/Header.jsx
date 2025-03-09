@@ -11,10 +11,16 @@ const Header = () => {
   const token = useSelector((state) => state.auth.token);
 
   // Handle logout
-  const handleLogout = () => {
-    dispatch(logout()); // Dispatch the logout action
-    navigate("/"); // Redirect to the home page
+  const handleLogout = async () => {
+    try {
+      await axios.post("http://localhost:5000/admin/logout", {}, { withCredentials: true });
+      dispatch(logout()); // Dispatch the logout action
+      navigate("/"); // Redirect to the home page
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
+  
 
 
 
