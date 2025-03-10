@@ -266,7 +266,7 @@ const ProductDetails = () => {
         </a>
         &gt;
         <a className="cursor-pointer hover:underline">
-          {productDetails.subCategory}
+          {productDetails?.subCategory}
         </a>
       </nav>
       {/* Product Section */}
@@ -283,12 +283,12 @@ const ProductDetails = () => {
 
                   src:
                     selectedImage ||
-                    productDetails?.variants[0].productImages[0],
+                    productDetails?.variants[0]?.productImages[0],
                 },
                 largeImage: {
                   src:
                     selectedImage ||
-                    productDetails?.variants[0].productImages[0],
+                    productDetails?.variants[0]?.productImages[0],
                   width: 1200, // Higher resolution for zoomed view
                   height: 1200,
                 },
@@ -301,7 +301,7 @@ const ProductDetails = () => {
             />
           </div>{" "}
           <div className="flex gap-5">
-            {selectedVariant?.productImages.map((productImage, index) => (
+            {selectedVariant?.productImages?.map((productImage, index) => (
               <div
                 key={index}
                 onClick={() => setSelectedImage(productImage)}
@@ -320,7 +320,7 @@ const ProductDetails = () => {
         </div>
         {/* Product Details */}
         <div className="lg:w-1/2 lg:pl-8">
-          <h1 className="text-2xl font-bold mb-2">{productDetails.name}</h1>
+          <h1 className="text-2xl font-bold mb-2">{productDetails?.name}</h1>
           <div className="flex items-center mb-4">
             <div className="flex text-yellow-500">
               {[...Array(5)].map((_, i) => {
@@ -584,16 +584,16 @@ const ProductDetails = () => {
                 className="bg-white p-4 rounded-lg shadow-md"
               >
                 <img
-                  alt={product.name}
+                  alt={product?.name}
                   className="w-full rounded-lg mb-4"
                   height="400"
-                  src={product.variants[0].productImages[0]}
+                  src={product?.variants[0]?.productImages[0]}
                   width="300"
                 />
-                <h3 className="text-lg font-semibold">{product.name}</h3>
-                <p className="text-gray-600">{product.brand}</p>
+                <h3 className="text-lg font-semibold">{product?.name}</h3>
+                <p className="text-gray-600">{product?.brand}</p>
                 <p className="text-lg font-bold">
-                  ${product.variants[0].discount_price}
+                  ${product?.variants[0]?.discount_price}
                 </p>
               </div>
             ))}

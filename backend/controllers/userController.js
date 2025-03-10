@@ -5,23 +5,92 @@ const crypto = require("crypto");
 const { OAuth2Client } = require("google-auth-library"); // Added for verifying Google token
 const client = new OAuth2Client(process.env.CLIENT_ID); // Initialize using CLIENT_ID from .env
 const Product = require("../models/productSchema");
+const OTPModel = require("../models/otpSchema");
 const Category = require("../models/categorySchema");
 const Review = require("../models/reviewSchema");
 const { log } = require("console");
 const { default: mongoose } = require("mongoose"); 
 const generateToken = require("../utils/generateToken");
 
+
+
+
+
+const signupOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Generate a 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999);
+    const otpExpiry = Date.now() + 5 * 60 * 1000; // 5-minute expiry
+
+    // Store OTP and expiry time in a temporary collection
+    await OTPModel.findOneAndUpdate(
+      { email }, 
+      { otp, otpExpiry }, 
+      { upsert: true, new: true }
+    );
+
+    // Email Transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.APP_PASS,
+      },
+    });
+
+    // Email Options
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: email,
+      subject: "Your Signup OTP",
+      text: `Your OTP code is: ${otp}. It will expire in 5 minutes.`,
+    };
+
+    // Send Email
+    await transporter.sendMail(mailOptions);
+    res.json({ message: "OTP sent successfully" });
+
+  } catch (error) {
+    res.status(500).json({ message: "Error sending OTP", error: error.message });
+  }
+};
+const verifySignupOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find the OTP entry
+    const otpRecord = await OTPModel.findOne({ email });
+    if (!otpRecord) {
+      return res.status(400).json({ message: "OTP not found. Please request a new one." });
+    }
+
+    // Check if OTP matches and is not expired
+    if (otpRecord.otp !== otp || otpRecord.otpExpiry < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // Delete OTP after successful verification
+    await OTPModel.deleteOne({ email });
+
+    res.status(200).json({ message: "OTP verified successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error verifying OTP", error: error.message });
+  }
+};
+
 const signup = async (req, res) => {
   try {
     const { email, name, phone, password } = req.body;
 
-    // Check if the user already exists
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash password
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
@@ -38,7 +107,7 @@ const signup = async (req, res) => {
     // Generate JWT token
     const token = generateToken(newUser._id, newUser.role);
 
-    // Set the token in an HTTP-only cookie
+    // Set token in an HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -46,17 +115,18 @@ const signup = async (req, res) => {
       maxAge: 60 * 60 * 1000, // 1 hour
     });
 
-    // Send userId and role to frontend for Redux state management
     res.status(201).json({
-      message: "User created successfully",
+      message: "Signup successful",
       userId: newUser._id,
       role: newUser.role,
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Error during signup", error: error.message });
   }
 };
+
+
+
 
 const getCategoryName = async (req, res) => {
   try {
@@ -160,7 +230,7 @@ const verifyOTP = async (req, res) => {
 const getNewArrivals = async (req, res) => {
   try {
     // Fetch the 4 most recent products
-    const newArrivals = await Product.find().sort({ createdAt: -1 }).limit(10);
+    const newArrivals = await Product.find({isDeleted:false}).sort({ createdAt: -1 }).limit(10);
 
     res.json({
       success: true,
@@ -462,12 +532,14 @@ module.exports = {
   filteredProducts,
   sendOTP,
   verifyOTP,
-  getRating,
+  getRating, 
   addReview,
   getReview,
   searchCategoriesToFilter,
   getNewArrivals,
   searchProducts,
+  signupOTP,
+  verifySignupOTP,
   resetPassword,
   getCategoryName,
   categoryWiseProducs,

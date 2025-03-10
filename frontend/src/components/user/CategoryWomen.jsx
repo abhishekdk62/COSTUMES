@@ -13,7 +13,7 @@ const CategoryWomen = () => {
 
   const handleProductView = (product) => {
     localStorage.setItem("productInfo", JSON.stringify(product));
-    navigate("/product");
+    navigate(`/product/${product._id}`);
   };
 
   useEffect(() => {
@@ -100,7 +100,7 @@ const CategoryWomen = () => {
               <div className="flex items-center justify-center">
                 <div className="w-100 h-100">
                   <img
-                    src={product.productImages?.[0]}
+                    src={product?.variants[0]?.productImages?.[0]}
                     alt={product.name}
                     className="w-full h-full object-cover  transition duration-300 ease-in-out group-hover:brightness-75"
                   />

@@ -30,27 +30,60 @@ const LoginForm = ({ setForgotPassword }) => {
   }, [searchParams]);
 
   const handleLogin = async (e) => {
-    e.preventDefault(); 
-    setError(null);
-    setLoading(true);
-    try {
-      const res = await axios.post("http://localhost:5000/user/login", {
-        email,
-        password,
-      },
-    {withCredentials:true});
+    e.preventDefault();
     
-  console.log(res.data);
-  
+    setError(null);
+    
+    // Validate email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email) {
+      alert("Error: Email address is required");
+      return;
+    }
+    
+    if (!emailRegex.test(email)) {
+      alert("Error: Please enter a valid email address");
+      return;
+    } 
+    
+    // Validate password
+    if (!password) {
+      alert("Error: Password is required");
+      return;
+    }
+    
+    if (password.length < 6) {
+      alert("Error: Password must be at least 6 characters long");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/user/login", 
+        {
+          email,
+          password,
+        },
+        {withCredentials: true}
+      );
+      
+      console.log(res.data);
+      
       const { userId, role } = res.data; // Expecting backend to send userId and role
       dispatch(login({ userId, role })); // Dispatch to Redux, which sets isAuthenticated
       navigate(role === "admin" ? "/admin/users" : "/user/home");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
+      alert(`Error: ${err.response?.data?.message || "Login failed"}`);
     } finally {
       setLoading(false);
     }
   };
+
+
+
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5000/auth/google/login";
   };

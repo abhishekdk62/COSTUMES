@@ -90,14 +90,14 @@ const NewArrivals = () => {
           {newArrivals.map((product) => (
             <div
               onClick={() => handleProductView(product)}
-              key={product._id}
+              key={product?._id}
               className="p-2 group cursor-pointer"
             >
               <div className="flex items-center justify-center">
                 <div className="w-100 h-100">
                   <img
-                    src={product.variants[0].productImages?.[0]}
-                    alt={product.name}
+                    src={product?.variants[0]?.productImages?.[0]}
+                    alt={product?.name}
                     className="w-full h-full object-cover  transition duration-300 ease-in-out group-hover:brightness-75"
                   />
                 </div>
@@ -106,7 +106,7 @@ const NewArrivals = () => {
                 style={{ fontFamily: "'Cambay', sans-serif" }}
                 className="mt-2 text-center text-gray-700 text-xl"
               >
-                {product.name}
+                {product?.name}
               </p>
             </div>
           ))}

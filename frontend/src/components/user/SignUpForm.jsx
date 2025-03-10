@@ -1,44 +1,99 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FaGoogle, FaTwitter, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaGoogle, FaEye, FaEyeSlash } from "react-icons/fa";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { login } from "../../../slices/authSlice"; // Import the login action
+import { login } from "../../../slices/authSlice"; // Redux action for login
 
 const LoginForm = () => {
-  // State for form fields
+  const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(""); // For error messages
-  const [loading, setLoading] = useState(false); // For loading state during API call
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const dispatch = useDispatch(); // Hook to dispatch Redux actions
+  const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
-
-  // Check for OAuth error parameters on component mount
   useEffect(() => {
     const oauthError = searchParams.get("error");
     if (oauthError) {
       setError(decodeURIComponent(oauthError));
-      
-      // Optional: Remove the error from URL without page refresh
       const url = new URL(window.location.href);
       url.searchParams.delete("error");
       window.history.replaceState({}, "", url);
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e) => {
+  // Step 1: Send OTP using Name & Email
+  const handleSendOTP = async (e) => {
     e.preventDefault();
-    setError(null);
+    setError("");
+    
+    // Email validation using regex
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!email) {
+      alert("Error: Email address is required");
+      return;
+    }
+    
+    if (!emailRegex.test(email)) {
+      alert("Error: Please enter a valid email address");
+      return;
+    }
+    
     setLoading(true);
-  
+    
     try {
+      // Call backend endpoint to send OTP to the provided email
+      const res = await axios.post("http://localhost:5000/user/signupotp", { email });
+      console.log("OTP sent:", res.data);
+      setStep(2);
+      alert("OTP has been sent to your email address");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to send OTP");
+      alert(`Error: ${err.response?.data?.message || "Failed to send OTP"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+
+
+
+
+  // Step 2: Verify OTP
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await axios.post("http://localhost:5000/user/verifysignupotp", { email, otp });
+      console.log("OTP verified:", res.data);
+      setStep(3);
+    } catch (err) {
+      setError(err.response?.data?.message || "OTP verification failed");
+      console.log(err.response.data)
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 3: Complete Signup with Phone & Password
+  const handleCompleteSignup = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      // Call final signup endpoint that creates the user account
       const res = await axios.post(
         "http://localhost:5000/user/signup",
         {
@@ -47,11 +102,10 @@ const LoginForm = () => {
           phone: `+${phone}`,
           password,
         },
-        { withCredentials: true } // Ensures cookies are sent/received
+        { withCredentials: true } // Ensures cookies are handled correctly
       );
-  console.log(res.data);
-      const { userId, role } = res.data; // Expecting backend to send userId and role
-      dispatch(login({ userId, role })); // Dispatch to Redux, which sets isAuthenticated
+      const { userId, role } = res.data; // Expecting userId and role from backend
+      dispatch(login({ userId, role }));
       navigate(role === "admin" ? "/admin/dashboard" : "/user/home");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed");
@@ -59,7 +113,6 @@ const LoginForm = () => {
       setLoading(false);
     }
   };
-  
 
   const handleGoogleSignup = () => {
     window.location.href = "http://localhost:5000/auth/google/signup";
@@ -76,7 +129,6 @@ const LoginForm = () => {
       </div>
       {/* Form Section */}
       <div className="md:w-1/2 p-8 flex flex-col justify-center overflow-y-auto">
-        {/* Welcome Text at the Top (Centered) */}
         <div className="mb-6 flex justify-center">
           <div className="text-center font-bold text-black px-4 mt-3 rounded-md">
             <p>Welcome to Costumes!</p>
@@ -91,90 +143,132 @@ const LoginForm = () => {
         )}
 
         <form>
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="name">
-              Name
-            </label>
-            <input
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
-              id="name"
-              type="text"
-              placeholder="Enter your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+          {step === 1 && (
+            <>
+              {/* Step 1: Name & Email */}
+              <div className="mb-4">
+                <label htmlFor="name" className="block text-gray-700 mb-2">
+                  Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  placeholder="Enter your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                />
+              </div>
+              <div className="mb-4">
+                <label htmlFor="email" className="block text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                />
+              </div>
+              <button
+                type="submit"
+                onClick={handleSendOTP}
+                disabled={loading}
+                className="w-full bg-purple-600 text-white rounded-lg py-2 hover:bg-purple-700 transition-colors"
+              >
+                {loading ? "Sending OTP..." : "Send OTP"}
+              </button>
+            </>
+          )}
 
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="email">
-              Email Address
-            </label>
-            <input
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
-              id="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+          {step === 2 && (
+            <>
+              {/* Step 2: Enter OTP */}
+              <div className="mb-4">
+                <label htmlFor="otp" className="block text-gray-700 mb-2">
+                  Enter OTP
+                </label>
+                <input
+                  id="otp"
+                  type="text"
+                  placeholder="Enter the OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                />
+              </div>
+              <button
+                type="submit"
+                onClick={handleVerifyOTP}
+                disabled={loading}
+                className="w-full bg-purple-600 text-white rounded-lg py-2 hover:bg-purple-700 transition-colors"
+              >
+                {loading ? "Verifying OTP..." : "Verify OTP"}
+              </button>
+            </>
+          )}
 
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-2" htmlFor="phone">
-              Phone
-            </label>
-            <PhoneInput
-              country={"in"} 
-              value={phone}
-              onChange={(value) => setPhone(value)}
-              inputProps={{
-                id: "phone",
-                className:
-                  "w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-600",
-              }}
-              containerClass="w-full"
-              buttonStyle={{
-                backgroundColor: "transparent",
-                border: "none",
-                padding: "0 8px",
-              }}
-              dropdownClass="bg-white shadow-lg rounded-lg"
-              inputStyle={{
-                width: "100%",
-                height: "100%",
-                paddingLeft: "48px", 
-              }}
-            />
-          </div>
-
-          {/* Password Field */}
-          <div className="mb-4 relative">
-            <label className="block text-gray-700 mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
-              id="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <span
-              className="absolute right-3 top-10 text-gray-500 cursor-pointer"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <FaEye /> : <FaEyeSlash />}
-            </span>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-purple-600 text-white rounded-lg py-2 hover:bg-purple-700 transition-colors"
-            disabled={loading}
-            onClick={handleSubmit}
-          >
-            {loading ? "Signing Up..." : "Sign Up"}
-          </button>
+          {step === 3 && (
+            <>
+              {/* Step 3: Phone & Password */}
+              <div className="mb-4">
+                <label htmlFor="phone" className="block text-gray-700 mb-2">
+                  Phone
+                </label>
+                <PhoneInput
+                  country={"in"}
+                  value={phone}
+                  onChange={(value) => setPhone(value)}
+                  inputProps={{
+                    id: "phone",
+                    className:
+                      "w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600",
+                  }}
+                  containerClass="w-full"
+                  buttonStyle={{
+                    backgroundColor: "transparent",
+                    border: "none",
+                    padding: "0 8px",
+                  }}
+                  dropdownClass="bg-white shadow-lg rounded-lg"
+                  inputStyle={{
+                    width: "100%",
+                    height: "100%",
+                    paddingLeft: "48px",
+                  }}
+                />
+              </div>
+              <div className="mb-4 relative">
+                <label htmlFor="password" className="block text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-600"
+                />
+                <span
+                  className="absolute right-3 top-10 text-gray-500 cursor-pointer"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FaEye /> : <FaEyeSlash />}
+                </span>
+              </div>
+              <button
+                type="submit"
+                onClick={handleCompleteSignup}
+                disabled={loading}
+                className="w-full bg-purple-600 text-white rounded-lg py-2 hover:bg-purple-700 transition-colors"
+              >
+                {loading ? "Signing Up..." : "Sign Up"}
+              </button>
+            </>
+          )}
         </form>
 
         <p className="mt-6 text-center text-gray-500">
@@ -191,10 +285,9 @@ const LoginForm = () => {
           <span className="mx-2 text-gray-400">OR</span>
           <hr className="flex-grow border-gray-300" />
         </div>
-
         <div className="mb-6">
-          <button 
-            onClick={handleGoogleSignup} 
+          <button
+            onClick={handleGoogleSignup}
             className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors"
           >
             <FaGoogle className="text-red-500 mr-2" />

@@ -334,6 +334,13 @@ const AddCategory = ({ setShowAddCategory }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Simple validation
+    if (!categoryName || !description || !subCategories || !discount || !thumbnail) {
+      alert("All fields are required!");
+      return;
+    }
+
     try {
       const response = await axios.post(
         "http://localhost:5000/admin/addcategorys",
@@ -343,8 +350,8 @@ const AddCategory = ({ setShowAddCategory }) => {
           subCategories,
           discount,
           thumbnail, // sending the thumbnail URL to the backend
-        },  { withCredentials: true }
-
+        },  
+        { withCredentials: true }
       );
       alert("Category added successfully!");
       setCategoryName("");
@@ -639,6 +646,13 @@ const EditCategory = ({ setEditCategory }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Simple validation
+    if (!categoryId || !categoryName || !description || !subCategories || !discount || !visibilityStatus || !thumbnail) {
+      alert("All fields are required!");
+      return;
+    }
+
     try {
       const response = await axios.post(
         "http://localhost:5000/admin/editcategories",
@@ -650,8 +664,8 @@ const EditCategory = ({ setEditCategory }) => {
           discount: discount,
           visibilityStatus: visibilityStatus,
           thumbnail: thumbnail, // Send the thumbnail URL to the backend
-        },  { withCredentials: true }
-
+        },  
+        { withCredentials: true }
       );
       alert(response.data.message);
     } catch (error) {

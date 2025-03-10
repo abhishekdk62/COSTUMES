@@ -87,13 +87,43 @@ const AddProduct = ({ setShowAddProduct }) => {
     });
   };
 
-  // Add a new image field (for multiple uploads)
   const addImageField = () => {
     setProductImages([...productImages, ""]);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+  
+    // Check if there are at least two product images
+    if (productImages.filter(img => img !== "").length < 2) {
+      alert("Error: Please add at least 2 product images");
+      return;
+    }
+  
+    // Check if there are any variants
+    if (variants.length === 0) {
+      alert("Error: Please add at least one variant");
+      return;
+    }
+  
+    // Validate each variant
+    for (let i = 0; i < variants.length; i++) {
+      const variant = variants[i];
+      
+      // Check if base price is more than 5000
+      if (variant.base_price < 5000) {
+        alert(`Error: Variant ${i+1} (${variant.color}, ${variant.size}): Base price must be at least 5000`);
+        return;
+      }
+      
+      // Check if discount price is not more than base price
+      if (variant.discount_price > variant.base_price) {
+        alert(`Error: Variant ${i+1} (${variant.color}, ${variant.size}): Discount price cannot be more than base price`);
+        return;
+      }
+    }
+  
+    // If all validations pass, proceed with submission
     try {
       const response = await axios.post(
         "http://localhost:5000/admin/addProduct",
@@ -104,12 +134,13 @@ const AddProduct = ({ setShowAddProduct }) => {
           category,
           subCategory,
           owner,
-          variants, // Include your variants array
-        },  { withCredentials: true }
-
+          variants,
+        },
+        { withCredentials: true }
       );
-
+      
       alert(response.data.message);
+      
       // Reset the form fields
       setName("");
       setDescription("");
@@ -120,14 +151,18 @@ const AddProduct = ({ setShowAddProduct }) => {
       setDiscountPercentage("");
       setStock("");
       setCategory("");
-      setColor("");
+      setSelectedColor("");
       setOwner("");
-      setSize("");
+      setSelectedSize("");
+      setVariants([]); // Reset the variants array
     } catch (error) {
-      alert(error);
+      alert(`Error: ${error.message || "Something went wrong"}`);
       console.log(error);
     }
   };
+
+
+
 
   const selectedCategory = categories.find((cat) => cat._id === category);
   const sizes = ["SM", "M", "L", "XL"];
@@ -147,14 +182,12 @@ const AddProduct = ({ setShowAddProduct }) => {
     updatedVariants.splice(index, 1);
     setVariants(updatedVariants);
   };
-  // State variables for the current variant input
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [stock, setStock] = useState("");
 
-  // Array state to store all variants
   const [variants, setVariants] = useState([]);
 
   const addVariant = () => {
@@ -165,17 +198,16 @@ const AddProduct = ({ setShowAddProduct }) => {
         base_price: Number(basePrice),
         discount_price: Number(discountPrice),
         stock: Number(stock),
-        productImages: productImages, // Correct: using variantImages
+        productImages: productImages, 
       };
 
       setVariants([...variants, newVariant]);
-      // Clear the inputs for next entry
       setSelectedColor("");
       setSelectedSize("");
       setBasePrice("");
       setDiscountPrice("");
       setStock("");
-      setProductImages([""]); // Reset variantImages state
+      setProductImages([""]); 
     } else {
       alert("Please fill in all fields");
     }
@@ -630,7 +662,7 @@ const ProductsList = ({
     if (confirmDelete) {
       try {
         const response = await axios.put(
-          `http://localhost:5000/admin/softdeleteproduct/${id}`,  { withCredentials: true }
+          `http://localhost:5000/admin/softdeleteproduct/${id}`, {}, { withCredentials: true }
 
         );
         if (response.status === 200) {
@@ -1152,6 +1184,48 @@ const EditProduct = ({ setShowEditProduct }) => {
       return;
     }
     
+    // Check if there are any variants
+    if (variants.length === 0) {
+      alert("Error: Please add at least one variant");
+      return;
+    }
+    
+    // Validate each variant
+    for (let i = 0; i < variants.length; i++) {
+      const variant = variants[i];
+      
+      // Check if variant has all required fields
+      if (!variant.color || !variant.size) {
+        alert(`Error: Variant ${i+1} is missing color or size information`);
+        return;
+      }
+      
+      // Check if base price is more than 5000
+      if (variant.base_price < 5000) {
+        alert(`Error: Variant ${i+1} (${variant.color}, ${variant.size}): Base price must be at least 5000`);
+        return;
+      }
+      
+      // Check if discount price is not more than base price
+      if (variant.discount_price > variant.base_price) {
+        alert(`Error: Variant ${i+1} (${variant.color}, ${variant.size}): Discount price cannot be more than base price`);
+        return;
+      }
+      
+      // Check if variant has at least 2 images
+      const variantImages = variant.productImages || [];
+      if (variantImages.filter(img => img !== "").length < 2) {
+        alert(`Error: Variant ${i+1} (${variant.color}, ${variant.size}) must have at least 2 images`);
+        return;
+      }
+      
+      // Check if stock is a positive number
+      if (variant.stock <= 0) {
+        alert(`Error: Variant ${i+1} (${variant.color}, ${variant.size}): Stock must be greater than 0`);
+        return;
+      }
+    }
+    
     try {
       // Prepare payload with only necessary data
       const payload = {
@@ -1173,8 +1247,8 @@ const EditProduct = ({ setShowEditProduct }) => {
       
       const response = await axios.put(
         `http://localhost:5000/admin/editproduct/${productDetails._id}`,
-        payload,  { withCredentials: true }
-
+        payload, 
+        { withCredentials: true }
       );
       
       alert(response.data.message);
