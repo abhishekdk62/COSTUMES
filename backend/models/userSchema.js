@@ -18,8 +18,11 @@ const userSchema = new mongoose.Schema(
     balance: { type: Number, default: 0 },
     profileImage: { type: String, default: "" },
     dateOfBirth: { type: Date },
-    googleId: { type: String, unique: true }, // Google ID to track users
-
+    googleId: { 
+      type: String, 
+      unique: true, 
+      sparse: true // Sparse index: only index documents with a defined googleId
+    },
     otp: { type: String },  // Field for storing OTP
     otpExpiry: { type: Number }, // Field for OTP expiry time
   },

@@ -3,10 +3,10 @@ import { useSelector } from 'react-redux';
 import { Navigate } from 'react-router-dom';
 
 const PublicRoute = ({ children }) => {
-    const token = useSelector((state) => state.auth.token);
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const role = useSelector((state) => state.auth.role); // Assuming role is stored in Redux
 
-    if (token&&role==="admin") {
+    if (isAuthenticated&&role==="admin") {
         return  <Navigate to="/admin/users" replace /> 
     }
 

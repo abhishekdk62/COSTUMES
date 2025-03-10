@@ -5,6 +5,8 @@ import { useLocation, useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import ReactImageMagnify from "react-image-magnify";
 import { Star } from "lucide-react";
+import { useSelector } from "react-redux";
+import AlertDialog from "./Popup";
 
 const ProductDetails = () => {
   const [productDetails, setProductDetails] = useState(null);
@@ -57,8 +59,11 @@ const ProductDetails = () => {
       console.log(error);
     }
   };
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const userId = useSelector((state) => state.auth.userId);
+
   const handleAddReview = async () => {
-    if (productDetails && userInfo) {
+    if (productDetails && userId) {
       try {
         if (!newReview.text || !newReview.rating) {
           alert("Please enter Rating and the details");
@@ -68,7 +73,7 @@ const ProductDetails = () => {
         const response = await axios.post("http://localhost:5000/user/review", {
           newReview,
           productId: productDetails?._id,
-          userId: userInfo?._id,
+          userId: userId,
         });
         if (response.status == 200) {
           alert("Review Added");
@@ -202,6 +207,15 @@ const ProductDetails = () => {
       }
     }
   }, [productDetails, variantsByColor]);
+  const [showAlert, setShowAlert] = useState(false);
+
+  const handleSubmitReview = () => {
+    if (isAuthenticated) {
+      handleAddReview();
+    } else {
+      setShowAlert(true);
+    }
+  };
 
   useEffect(() => {
     if (selectedColor && selectedSize && variantsByColor[selectedColor]) {
@@ -363,9 +377,10 @@ const ProductDetails = () => {
                   key={color}
                   onClick={() => {
                     setSelectedColor(color);
-                    const defaultImage = variantsByColor[color][0]?.productImages[0];
+                    const defaultImage =
+                      variantsByColor[color][0]?.productImages[0];
                     setSelectedImage(defaultImage);
-                  
+
                     const uniqueSizes = [
                       ...new Set(variantsByColor[color].map((v) => v.size)),
                     ];
@@ -515,14 +530,19 @@ const ProductDetails = () => {
               ></textarea>
               <button
                 className="mt-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-                onClick={() => {
-                  userInfo
-                    ? handleAddReview()
-                    : alert("Please login to add review");
-                }}
+                onClick={handleSubmitReview}
               >
                 Submit Review
               </button>
+
+              {/* Conditionally render the AlertDialog when showAlert is true */}
+              {showAlert && (
+                <AlertDialog
+                  title="Notification"
+                  message="Please login to continue"
+                  onClose={() => setShowAlert(false)}
+                />
+              )}
             </div>
           </div>
         )}

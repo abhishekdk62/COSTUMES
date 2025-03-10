@@ -1,29 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../../../slices/authSlice"; // Import the logout action
-
+import { login, logout } from "../../../slices/authSlice"; // Import the logout action
+import axios from 'axios'
 const Header = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
-  // Get the token from the Redux store
-  const token = useSelector((state) => state.auth.token);
-
-  // Handle logout
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:5000/admin/logout", {}, { withCredentials: true });
-      dispatch(logout()); // Dispatch the logout action
-      navigate("/"); // Redirect to the home page
+      await axios.post("http://localhost:5000/user/logout", {}, { withCredentials: true });
+      dispatch(logout()); 
+      navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
-  
 
 
-
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   return (
     <div>
       <nav className="flex items-center justify-between p-4 bg-white text-black">
@@ -45,7 +39,7 @@ const Header = () => {
           </div>
 
           {/* Conditional Rendering */}
-          {token ? (
+          {isAuthenticated ? (
             // If the user is logged in, show the Logout button
             <button
               onClick={handleLogout}

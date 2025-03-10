@@ -43,12 +43,8 @@ const ListProducts = () => {
       const response = await axios.post(
         "http://localhost:5000/user/products",
         requestBody
-      );
-
-      // Expected response format: { products, page, totalPages }
+      );    // Expected response format: { products, page, totalPages }
       setProducts(response.data.products);
-      
-
       setCurrentPage(response.data.page);
       setTotalPages(response.data.totalPages);
       setError("");
@@ -147,8 +143,8 @@ const ListProducts = () => {
                 setMaxPrice(values[1]);
               }}
               className="w-full mt-2"
-              thumbClassName="h-5 w-5 bg-primary border-2 border-white shadow-md rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
-              trackClassName="h-2 rounded-full bg-gray-200"
+              thumbClassName="h-5 w-5 bg-gray-400 border-2 border-white shadow-md rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
+              trackClassName="h-2 rounded-full bg-gray-400"
               pearling
               minDistance={10}
             />

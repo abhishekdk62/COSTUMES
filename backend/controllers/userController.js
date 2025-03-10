@@ -9,27 +9,55 @@ const Category = require("../models/categorySchema");
 const Review = require("../models/reviewSchema");
 const { log } = require("console");
 const { default: mongoose } = require("mongoose"); 
+const generateToken = require("../utils/generateToken");
 
 const signup = async (req, res) => {
   try {
     const { email, name, phone, password } = req.body;
-    const user = await User.findOne({ email });
-    if (user) {
+
+    // Check if the user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(400).json({ message: "User already exists" });
     }
+
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create new user
     const newUser = new User({
       email,
       firstname: name,
       phone,
       password: hashedPassword,
+      role: "user", // Default role
     });
+
     await newUser.save();
-    res.status(201).json({ message: "User created successfully" });
+
+    // Generate JWT token
+    const token = generateToken(newUser._id, newUser.role);
+
+    // Set the token in an HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    // Send userId and role to frontend for Redux state management
+    res.status(201).json({
+      message: "User created successfully",
+      userId: newUser._id,
+      role: newUser.role,
+    });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
 const getCategoryName = async (req, res) => {
   try {
     const { id } = req.body;

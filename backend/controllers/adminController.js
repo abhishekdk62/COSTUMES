@@ -1,5 +1,6 @@
 const User = require("../models/userSchema");
 const Category = require("../models/categorySchema");
+const Coupon = require("../models/couponSchema");
 const Product = require("../models/productSchema");
 const { default: mongoose } = require("mongoose");
 
@@ -450,14 +451,162 @@ const restoreCategory = async (req, res) => {
   }
 };
 
+const addCoupon = async (req, res) => {
+  try {
+    const { code,name, discountType, discountValue, expiryDate, usageLimit } = req.body;
+    
+    // Create a new coupon instance
+    const newCoupon = new Coupon({
+      code,
+      couponName:name,
+      discountType,
+      discountValue, 
+      expiryDate,
+      usageLimit,
+    });
+    
+    await newCoupon.save();
+    
+    res.status(201).json({ 
+      message: "Coupon created successfully", 
+      coupon: newCoupon 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Edit an existing coupon
+const editCoupon = async (req, res) => {
+  try {
+    // Assume the coupon ID is provided in req.params.id
+    const couponId = req.params.id;
+    // The new data is provided in req.body
+    const updateData = req.body;
+    
+    
+    const updatedCoupon = await Coupon.findByIdAndUpdate(
+      couponId, 
+      updateData, 
+      { new: true }
+    );
+    
+    if (!updatedCoupon) {
+      return res.status(404).json({ message: "Coupon not found" });
+    }
+    
+    res.status(200).json({ 
+      message: "Coupon updated successfully", 
+      coupon: updatedCoupon 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete a coupon
+const softdeleteCoupon = async (req, res) => {
+  try {
+    const couponId = req.params.id;
+
+    const updatedCoupon = await Coupon.findByIdAndUpdate(
+      couponId,
+      { isDeleted: true },
+      { new: true }
+    );
+
+    if (!updatedCoupon) {
+      return res.status(404).json({ message: "Coupon not found" });
+    }
+
+    res.status(200).json({ r: true, message: "Coupon soft deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const searchCoupons = async (req, res) => {
+  try {
+    const searchQuery = req.query.q || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const filter = {
+      couponName: { $regex: searchQuery, $options: "i" },
+      isDeleted: false,
+    };
+
+    // Count total matching products
+    const total = await Coupon.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
+
+    // Retrieve paginated products
+    const coupon = await Coupon.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      coupon,
+      total,
+      page,
+      totalPages,
+    });
+  } catch (error) {
+    console.error("Error in searchCoupons:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+const searchDeletedCoupons=async(req,res)=>{
+  try {
+    const searchQuery = req.query.q || "";
+
+    const coupons = await Coupon.find({
+      couponName: { $regex: searchQuery, $options: "i" },
+      isDeleted: true,
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(coupons);
+  } catch (error) {
+    console.error("Error in searchproducts:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+}
+
+const restoreCoupon=async(req,res)=>{
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json("Id not found");
+    }
+    const coupon = await Coupon.findByIdAndUpdate(
+      id,
+      { isDeleted: false },
+      { new: true }
+    );
+    res.status(200).json("Product updated");
+  } catch (error) {
+    res.status(500).json("Internal server error", error);
+  }
+}
+
 module.exports = {
   searchUsers,
+  restoreCoupon,
   restoreProduct,
+  softdeleteCoupon,
+  addCoupon,
+  editCoupon,
   addCategorys,
+  searchDeletedCoupons,
   searchCategories,
   searchDeletedCategories,
   editCategories,
   softdelete,
+  searchCoupons,
   addProduct,
   getCategory,
   searchProducts,

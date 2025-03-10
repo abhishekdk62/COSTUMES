@@ -13,6 +13,7 @@ const Dashboard = () => {
     localStorage.setItem("activeTab",activeTab)
 
   },[activeTab])
+  const[selectedTab,setSelectedTab]=useState("view")
 
   return (
     <>
@@ -23,7 +24,7 @@ const Dashboard = () => {
           {activeTab === "customer" && <Customer />}
           {activeTab === "category" && <Category />}
           {activeTab === "products" && <Products />}
-          {activeTab === "coupon" && <Coupons />}
+          {activeTab === "coupon" && <Coupons selectedTab={selectedTab} setSelectedTab={setSelectedTab} />}
         </div>
       </div>
     </>

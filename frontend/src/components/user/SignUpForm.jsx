@@ -33,57 +33,33 @@ const LoginForm = () => {
     }
   }, [searchParams]);
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
-    setError(""); // Clear previous errors
-
-    // Prepare the data for the API request
-    const userData = {
-      email,
-      name,
-      phone: `+${phone}`, // Add the "+" prefix for the phone number
-      password,
-    };
-
+  
     try {
-      // Make a POST request to the backend
-      const response = await axios.post(
+      const res = await axios.post(
         "http://localhost:5000/user/signup",
-        userData
+        {
+          email,
+          name,
+          phone: `+${phone}`,
+          password,
+        },
+        { withCredentials: true } // Ensures cookies are sent/received
       );
-      console.log("Signup successful:", response.data);
-
-      // Assuming the backend returns `user`, `token`, and `role` in the response
-      const { user, token, role } = response.data;
-
-      // Store in localStorage
-      localStorage.setItem("user", JSON.stringify(user)); // Store user object as a string
-      localStorage.setItem("token", token); // Store token
-      localStorage.setItem("role", role); // Store role
-
-      // Dispatch the login action to update Redux state
-      dispatch(
-        login({
-          user, // Store user details
-          token, // Save JWT token
-          role, // Save role ('admin' or 'user')
-        })
-      );
-
-      // Redirect to the home page or dashboard after successful signup
+  console.log(res.data);
+      const { userId, role } = res.data; // Expecting backend to send userId and role
+      dispatch(login({ userId, role })); // Dispatch to Redux, which sets isAuthenticated
       navigate(role === "admin" ? "/admin/dashboard" : "/user/home");
     } catch (err) {
-      // Handle errors
-      console.error("Signup failed:", err.response?.data || err.message);
-      setError(
-        err.response?.data?.message || "An error occurred during signup."
-      );
+      setError(err.response?.data?.message || "Signup failed");
     } finally {
-      setLoading(false); // Reset loading state
+      setLoading(false);
     }
   };
+  
 
   const handleGoogleSignup = () => {
     window.location.href = "http://localhost:5000/auth/google/signup";
@@ -91,7 +67,6 @@ const LoginForm = () => {
 
   return (
     <div className="flex flex-col md:flex-row bg-white shadow-lg rounded-lg h-screen overflow-hidden">
-      {/* Image Section */}
       <div className="h-[90vh] md:w-1/2 relative">
         <img
           src="https://hips.hearstapps.com/hmg-prod/images/hbz090122newsopener-collage-1664051983.jpg?crop=1.00xw:1.00xh;0,0&resize=1200:*"
@@ -99,7 +74,6 @@ const LoginForm = () => {
           className="w-full h-full object-cover"
         />
       </div>
-
       {/* Form Section */}
       <div className="md:w-1/2 p-8 flex flex-col justify-center overflow-y-auto">
         {/* Welcome Text at the Top (Centered) */}
@@ -116,7 +90,7 @@ const LoginForm = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form>
           <div className="mb-4">
             <label className="block text-gray-700 mb-2" htmlFor="name">
               Name
@@ -197,6 +171,7 @@ const LoginForm = () => {
             type="submit"
             className="w-full bg-purple-600 text-white rounded-lg py-2 hover:bg-purple-700 transition-colors"
             disabled={loading}
+            onClick={handleSubmit}
           >
             {loading ? "Signing Up..." : "Sign Up"}
           </button>

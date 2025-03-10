@@ -5,11 +5,31 @@ import Home from "./pages/user/Home";
 import SignUp from "./pages/user/Signup";
 import PrivateRoute from "./protected/PrivateRoute";
 import PublicRoute from "./protected/PublicRoute";
-import React from "react";
+import React, { useEffect } from "react";
 import ProductsView from "./pages/user/ProductsView";
 import ProductView from "./pages/user/ProductView";
+import { login } from "../slices/authSlice";
+import { useDispatch } from "react-redux";
+import axios from 'axios'
 
 function App() {
+  const dispatch=useDispatch()
+  useEffect(() => {
+    const verifyUser = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/user/check", {
+          withCredentials: true, // Ensure cookies are sent
+        });
+        
+
+        const { userId, role } = res.data;
+        dispatch(login({ userId, role }));
+      } catch (err) {
+      }
+    };
+
+    verifyUser();
+  }, [dispatch]);
   return (
     <Router>
       <Routes>

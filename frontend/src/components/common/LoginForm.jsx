@@ -11,6 +11,7 @@ const LoginForm = ({ setForgotPassword }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const[isAuthtenticated,setIsAuthenticated]=useState()
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
@@ -29,19 +30,20 @@ const LoginForm = ({ setForgotPassword }) => {
   }, [searchParams]);
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); 
     setError(null);
     setLoading(true);
     try {
       const res = await axios.post("http://localhost:5000/user/login", {
         email,
         password,
-      });
-      const { token, role, user } = res.data;
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("user", JSON.stringify(user));
-      dispatch(login({ token, role, user }));
+      },
+    {withCredentials:true});
+    
+  console.log(res.data);
+  
+      const { userId, role } = res.data; // Expecting backend to send userId and role
+      dispatch(login({ userId, role })); // Dispatch to Redux, which sets isAuthenticated
       navigate(role === "admin" ? "/admin/users" : "/user/home");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
@@ -49,7 +51,6 @@ const LoginForm = ({ setForgotPassword }) => {
       setLoading(false);
     }
   };
-
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5000/auth/google/login";
   };

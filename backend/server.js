@@ -2,6 +2,7 @@ const { config } = require("dotenv");
 const express = require("express");
 const connectDB = require("./config/db");
 const adminRouter = require("./routes/adminRoutes");
+const cookieParser = require("cookie-parser");
 const userRouter = require("./routes/userRoutes");
 const commonRouter = require("./routes/commonRoutes");
 const cors = require("cors");
@@ -13,9 +14,17 @@ const generateToken = require("./utils/generateToken");
 
 const app = express();
 config();
+app.use(cookieParser()); 
 
-// Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Your frontend URL
+    credentials: true, // Allow cookies
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allow necessary HTTP methods
+  })
+);
+
 app.use(express.json());
 app.use(
   session({
@@ -115,22 +124,30 @@ app.get(
   (req, res, next) => {
     passport.authenticate("google", {
       failureRedirect: "/auth/failure",
-      failureMessage: true
+      failureMessage: true,
     })(req, res, next);
   },
   (req, res) => {
-    // Generate JWT token for authentication
-    const token = generateToken(req.user._id);
-    
+    const role = "user"; // Default role if not stored in the schema
+
+    // Generate JWT token for authentication (include role if needed)
+    const token = generateToken(req.user._id, role);
+
+    // Set the token in an HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true in production (HTTPS)
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
     // Clear auth type from session after successful auth
     delete req.session.authType;
-    
-    // Redirect to frontend with token
-    res.redirect(`http://localhost:5173/user/home?token=${token}`);
+
+    // Redirect to frontend (without exposing token in URL)
+    res.redirect("http://localhost:5173/user/home");
   }
 );
-
-
 
 app.get("/auth/failure", (req, res) => {
   const errorMessage = req.session.messages ? 
