@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaGoogle, FaTwitter, FaEye, FaEyeSlash } from "react-icons/fa";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../../../slices/authSlice"; // Import the login action
 
@@ -18,6 +18,20 @@ const LoginForm = () => {
   const [loading, setLoading] = useState(false); // For loading state during API call
   const navigate = useNavigate();
   const dispatch = useDispatch(); // Hook to dispatch Redux actions
+  const [searchParams] = useSearchParams();
+
+  // Check for OAuth error parameters on component mount
+  useEffect(() => {
+    const oauthError = searchParams.get("error");
+    if (oauthError) {
+      setError(decodeURIComponent(oauthError));
+      
+      // Optional: Remove the error from URL without page refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      window.history.replaceState({}, "", url);
+    }
+  }, [searchParams]);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -70,10 +84,10 @@ const LoginForm = () => {
       setLoading(false); // Reset loading state
     }
   };
-  const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/auth/google/signup"    
-  };
 
+  const handleGoogleSignup = () => {
+    window.location.href = "http://localhost:5000/auth/google/signup";
+  };
 
   return (
     <div className="flex flex-col md:flex-row bg-white shadow-lg rounded-lg h-screen overflow-hidden">
@@ -96,8 +110,11 @@ const LoginForm = () => {
           </div>
         </div>
 
-     
-        {error && <div className="mb-4 text-red-500 text-center">{error}</div>}
+        {error && (
+          <div className="mb-4 text-red-500 text-center bg-red-50 border border-red-200 p-3 rounded-md">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -201,13 +218,14 @@ const LoginForm = () => {
         </div>
 
         <div className="mb-6">
-          <button onClick={handleGoogleLogin}  className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={handleGoogleSignup} 
+            className="w-full flex items-center justify-center border border-gray-300 rounded-lg py-2 mb-4 hover:bg-gray-50 transition-colors"
+          >
             <FaGoogle className="text-red-500 mr-2" />
             <span className="text-purple-600">Continue With Google</span>
           </button>
-         
         </div>
-
       </div>
     </div>
   );

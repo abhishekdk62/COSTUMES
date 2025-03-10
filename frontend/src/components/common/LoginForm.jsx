@@ -1,5 +1,4 @@
-// LoginForm After
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FaGoogle, FaTwitter, FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -14,6 +13,20 @@ const LoginForm = ({ setForgotPassword }) => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
+
+  // Check for OAuth error parameters on component mount
+  useEffect(() => {
+    const oauthError = searchParams.get("error");
+    if (oauthError) {
+      setError(decodeURIComponent(oauthError));
+      
+      // Optional: Remove the error from URL without page refresh
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      window.history.replaceState({}, "", url);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -38,11 +51,8 @@ const LoginForm = ({ setForgotPassword }) => {
   };
 
   const handleGoogleLogin = () => {
-   window.location.href = "http://localhost:5000/auth/google/login"
+    window.location.href = "http://localhost:5000/auth/google/login";
   };
-  const [searchParams] = useSearchParams();
-  const errors = searchParams.get("error");
-
 
   return (
     <div className="flex flex-col md:flex-row bg-white shadow-lg rounded-lg h-screen overflow-hidden">
@@ -58,16 +68,19 @@ const LoginForm = ({ setForgotPassword }) => {
       <div className="md:w-1/2 p-8 flex flex-col justify-center space-y-6">
         {/* Centered Welcome Text */}
         <div className="flex justify-center">
-          <div className="text-center font-bold text-black  px-6 py-4 rounded-md ">
+          <div className="text-center font-bold text-black px-6 py-4 rounded-md">
             <p className="text-lg">Welcome Back</p>
             <h1 className="text-3xl">Sign In</h1>
           </div>
         </div>
-    
+
+        {/* Error display - unified error handling */}
         {error && (
-          <div className="text-center text-red-500 text-sm">{error}</div>
+          <div className="text-center text-red-500 bg-red-50 border border-red-200 p-3 rounded-md">
+            {error}
+          </div>
         )}
-       
+
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
@@ -127,8 +140,7 @@ const LoginForm = ({ setForgotPassword }) => {
             Sign up
           </span>
         </p>
-             {errors && <p className="text-red-500">{error}</p>}
-      
+
         <div className="flex items-center my-4">
           <hr className="flex-grow border-gray-300" />
           <span className="mx-2 text-gray-400">OR</span>
